@@ -12,6 +12,7 @@ import MonEmploiDuTemps from './pages/MonEmploiDuTemps';
 import StudentEnrollment from './pages/StudentEnrollment';
 import TeacherStudents from './pages/TeacherStudents';
 import TeacherGradeEntry from './pages/TeacherGradeEntry';
+import AdminSeed from './pages/AdminSeed';
 
 // Pages Admin (Exemples de composants à créer ensuite)
 const AdminDashboard = () => <div className="p-8"><h1 className="text-2xl font-bold">Dashboard Administrateur</h1></div>;
@@ -71,6 +72,7 @@ function App() {
                                 <Routes>
                                     <Route path="dashboard" element={<AdminDashboard />} />
                                     <Route path="etudiants" element={<GestionEtudiants />} />
+                                    <Route path="seed" element={<AdminSeed />} />
                                 </Routes>
                             </AppLayout>
                         </ProtectedRoute>
