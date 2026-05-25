@@ -59,7 +59,7 @@ const MesNotes = () => {
                 <td className={`px-6 py-4 text-center font-semibold ${getGradeColor(grade.cc1)}`}>{grade.cc1 || '-'}</td>
                 <td className={`px-6 py-4 text-center font-semibold ${getGradeColor(grade.cc2)}`}>{grade.cc2 || '-'}</td>
                 <td className={`px-6 py-4 text-center font-semibold ${getGradeColor(grade.final_exam)}`}>{grade.final_exam || '-'}</td>
-                <td className={`px-6 py-4 text-center font-semibold text-lg ${getGradeColor(grade.final_grade)}`}>{grade.final_grade ? grade.final_grade.toFixed(2) : '-'}</td>
+                <td className={`px-6 py-4 text-center font-semibold text-lg ${getGradeColor(grade.final_grade)}`}>{grade.final_grade ? parseFloat(grade.final_grade).toFixed(2) : '-'}</td>
               </tr>
             ))}
           </tbody>
