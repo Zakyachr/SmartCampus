@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Home, Users, BookOpen, BarChart2, Settings, LogOut, GraduationCap, Calendar } from 'lucide-react';
+import { Home, Users, BookOpen, BarChart2, Settings, LogOut, GraduationCap, Calendar, UserCheck, PenTool } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -20,12 +20,14 @@ const Sidebar = () => {
     teacher: [
       { path: '/teacher/dashboard', label: 'Tableau de bord', icon: Home },
       { path: '/teacher/cours', label: 'Mes Cours', icon: BookOpen },
-      { path: '/teacher/notes', label: 'Gestion des Notes', icon: BarChart2 },
+      { path: '/teacher/eleves', label: 'Mes Élèves', icon: Users },
+      { path: '/teacher/notes', label: 'Saisie des Notes', icon: PenTool },
       { path: '/teacher/planning', label: 'Emploi du temps', icon: Calendar },
     ],
     student: [
       { path: '/student/dashboard', label: 'Tableau de bord', icon: Home },
       { path: '/student/cours', label: 'Mes Cours', icon: BookOpen },
+      { path: '/student/inscription', label: 'S\'inscrire aux Cours', icon: UserCheck },
       { path: '/student/notes', label: 'Mes Notes', icon: BarChart2 },
       { path: '/student/planning', label: 'Mon Emploi du temps', icon: Calendar },
     ]
@@ -57,7 +59,7 @@ const Sidebar = () => {
             to={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-primary text-white shadow' : 'text-[#94A3B8] hover:bg-[#243B45]'}`}
-          >
+            >
             <item.icon className="w-5 h-5" />
             <span className="text-sm">{item.label}</span>
           </NavLink>

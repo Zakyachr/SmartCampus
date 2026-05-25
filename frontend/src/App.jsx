@@ -9,6 +9,9 @@ import StudentDashboard from './pages/StudentDashboard';
 import MesCours from './pages/MesCours';
 import MesNotes from './pages/MesNotes';
 import MonEmploiDuTemps from './pages/MonEmploiDuTemps';
+import StudentEnrollment from './pages/StudentEnrollment';
+import TeacherStudents from './pages/TeacherStudents';
+import TeacherGradeEntry from './pages/TeacherGradeEntry';
 
 // Pages Admin (Exemples de composants à créer ensuite)
 const AdminDashboard = () => <div className="p-8"><h1 className="text-2xl font-bold">Dashboard Administrateur</h1></div>;
@@ -38,6 +41,7 @@ function App() {
                                 <Routes>
                                     <Route path="dashboard" element={<StudentDashboard />} />
                                     <Route path="cours" element={<MesCours />} />
+                                    <Route path="inscription" element={<StudentEnrollment />} />
                                     <Route path="notes" element={<MesNotes />} />
                                     <Route path="planning" element={<MonEmploiDuTemps />} />
                                 </Routes>
@@ -52,7 +56,8 @@ function App() {
                                 <Routes>
                                     <Route path="dashboard" element={<TeacherDashboard />} />
                                     <Route path="cours" element={<MesCours />} />
-                                    <Route path="notes" element={<MesNotes />} />
+                                    <Route path="eleves" element={<TeacherStudents />} />
+                                    <Route path="notes" element={<TeacherGradeEntry />} />
                                     <Route path="planning" element={<MonEmploiDuTemps />} />
                                 </Routes>
                             </AppLayout>
