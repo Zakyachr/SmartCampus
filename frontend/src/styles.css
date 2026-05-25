@@ -1,0 +1,39 @@
+:root {
+  --color-primary: #2ECC71;
+  --color-primary-dark: #27AE60;
+  --color-sidebar: #1A2E35;
+  --color-bg: #F4F6F8;
+  --color-card: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-text: #1C2B33;
+  --color-text-muted: #6B7280;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin:0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--color-bg); color: var(--color-text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+.sidebar-custom { width: 240px; background: var(--color-sidebar); color: #fff; height: 100vh; position: sticky; top: 0; flex-shrink: 0; }
+.sidebar-logo { padding: 20px; }
+
+.sidebar-custom .nav-item { color: #94A3B8; padding: 12px 20px; border-radius: 8px; display: flex; align-items: center; gap: 12px; }
+.sidebar-custom .nav-item:hover { background: #243B45; color: #fff; }
+.sidebar-custom .nav-item.active, .sidebar-custom .nav-item[aria-current="page"] { background: var(--color-primary); color: #fff; box-shadow: 0 6px 12px rgba(39,174,96,0.12); }
+
+.card { background: var(--color-card); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border: 1px solid transparent; }
+.header { background: #fff; padding: 20px 32px; }
+
+.btn-primary { background: var(--color-primary); color: #fff; border-radius: 8px; padding: 10px 20px; font-weight: 600; border: none; }
+.btn-primary:hover { background: var(--color-primary-dark); box-shadow: 0 6px 14px rgba(46,204,113,0.12); }
+
+.btn-outline { background: #fff; border: 1.5px solid var(--color-border); color: #374151; padding: 10px 20px; border-radius: 8px; }
+
+.input { border: 1px solid var(--color-border); border-radius: 8px; padding: 10px 14px; }
+
+.badge-active { background: #DCFCE7; color: #16A34A; border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 13px; }
+
+@media (max-width: 768px) { .sidebar-custom { position: fixed; left: -280px; z-index: 50; } .sidebar-custom.open { left: 0; } }
+
+/* small helpers */
+.text-20px { font-size: 20px; }
+.card p, .card div { color: var(--color-text); }
