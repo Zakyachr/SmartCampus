@@ -63,8 +63,7 @@ INSERT INTO `students` (`id`, `student_number`, `major`, `level`, `date_of_birth
 (9, 'E20260003', 'Génie Logiciel', 'ING2', '2005-11-10'),
 (10, 'E20260004', 'Systèmes Embarqués', 'ING2', '2005-08-25'),
 (11, 'E20260005', 'Génie Logiciel', 'ING3', '2004-01-17'),
-(12, 'E20260006', 'Systèmes Embarqués', 'ING3', '2004-04-30'),
-(13, 'E20260007', 'Électronique', 'ING2', '2005-09-12'),
+(12, 'E20260006', 'Systèmes Embarqués', 'ING3', '2004-04-30'),n
 (14, 'E20260008', 'Génie Logiciel', 'ING2', '2005-06-05'),
 (15, 'E20260009', 'Informatique', 'ING3', '2004-02-28'),
 (16, 'E20260010', 'Électronique', 'ING3', '2003-12-14'),
