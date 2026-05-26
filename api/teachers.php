@@ -85,4 +85,44 @@ elseif ($method === 'POST') {
         }
     }
 }
+elseif ($method === 'DELETE') {
+    requireRole(['admin']);
+    
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID enseignant manquant ou invalide."]);
+        exit();
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Détacher l'enseignant de ses cours (mettre teacher_id à NULL)
+        $pdo->prepare("UPDATE courses SET teacher_id = NULL WHERE teacher_id = ?")->execute([$id]);
+
+        // 2. Supprimer l'entrée dans teachers
+        $pdo->prepare("DELETE FROM teachers WHERE id = ?")->execute([$id]);
+
+        // 3. Supprimer l'utilisateur
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND role = 'teacher'");
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            http_response_code(404);
+            echo json_encode(["error" => "Enseignant introuvable."]);
+            exit();
+        }
+
+        $pdo->commit();
+        jsonResponse(["message" => "Enseignant supprimé avec succès."]);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(["error" => "Erreur lors de la suppression de l'enseignant."]);
+    }
+}
 ?>
