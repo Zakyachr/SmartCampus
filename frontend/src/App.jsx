@@ -5,6 +5,7 @@ import { SearchProvider } from './context/SearchContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import GestionEtudiants from './pages/GestionEtudiants';
 import GestionEnseignants from './pages/GestionEnseignants';
 import GestionCours from './pages/GestionCours';
@@ -39,6 +40,7 @@ function App() {
                     <Routes>
                         {/* Route publique */}
                         <Route path="/login" element={<LoginPage />} />
+                        <Route path="/register" element={<RegisterPage />} />
 
                         {/* Routes Étudiant */}
                         <Route path="/student/*" element={

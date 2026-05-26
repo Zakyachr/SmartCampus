@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
 const SmartCampusLogo = ({ className = "w-12 h-12" }) => (
@@ -117,8 +117,16 @@ const LoginPage = () => {
                         </button>
                     </form>
 
+                    {/* Sign Up Link */}
+                    <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+                        <span className="text-xs text-gray-400">Pas encore de compte ? </span>
+                        <Link to="/register" className="text-xs font-semibold text-[#27AE60] hover:underline">
+                            Créer un compte
+                        </Link>
+                    </div>
+
                     {/* Footer */}
-                    <div className="mt-8 pt-6 border-t border-gray-100">
+                    <div className="mt-6 pt-5 border-t border-gray-100">
                         <p className="text-center text-xs text-gray-400">
                             © 2026 SmartCampus — Campus Numérique
                         </p>
