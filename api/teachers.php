@@ -125,4 +125,44 @@ elseif ($method === 'DELETE') {
         echo json_encode(["error" => "Erreur lors de la suppression de l'enseignant."]);
     }
 }
+elseif ($method === 'PUT') {
+    requireRole(['admin']);
+    
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    $data = json_decode(file_get_contents("php://input"), true);
+    
+    $email = filter_var($data['email'] ?? '', FILTER_SANITIZE_EMAIL);
+    $firstName = filter_var($data['first_name'] ?? '', FILTER_SANITIZE_STRING);
+    $lastName = filter_var($data['last_name'] ?? '', FILTER_SANITIZE_STRING);
+    $department = filter_var($data['department'] ?? '', FILTER_SANITIZE_STRING);
+    
+    if (!$id || empty($email) || empty($firstName) || empty($lastName) || empty($department)) {
+        http_response_code(400);
+        echo json_encode(["error" => "Données invalides ou incomplètes."]);
+        exit();
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmtUser = $pdo->prepare("UPDATE users SET email = ?, first_name = ?, last_name = ? WHERE id = ? AND role = 'teacher'");
+        $stmtUser->execute([$email, $firstName, $lastName, $id]);
+
+        $stmtTeacher = $pdo->prepare("UPDATE teachers SET department = ? WHERE id = ?");
+        $stmtTeacher->execute([$department, $id]);
+
+        $pdo->commit();
+        jsonResponse(["message" => "Enseignant modifié avec succès."]);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        if ($e->getCode() == 23000) {
+            http_response_code(400);
+            echo json_encode(["error" => "L'email existe déjà."]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "Erreur lors de la modification de l'enseignant."]);
+        }
+    }
+}
 ?>
