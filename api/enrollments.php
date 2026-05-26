@@ -136,4 +136,41 @@ elseif ($method === 'POST') {
         }
     }
 }
+elseif ($method === 'DELETE') {
+    requireRole(['student', 'admin']);
+    
+    $course_id = filter_var($_GET['course_id'] ?? null, FILTER_VALIDATE_INT);
+    $student_id = ($_SESSION['role'] === 'student') ? $_SESSION['user_id'] : filter_var($_GET['student_id'] ?? null, FILTER_VALIDATE_INT);
+
+    if (!$course_id || !$student_id) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID étudiant ou cours manquant."]);
+        exit();
+    }
+
+    // Vérifier que le cours n'est pas "validé"
+    $stmt = $pdo->prepare("SELECT status FROM courses WHERE id = ?");
+    $stmt->execute([$course_id]);
+    $course = $stmt->fetch();
+    if ($course && $course['status'] === 'validé') {
+        http_response_code(400);
+        echo json_encode(["error" => "Impossible de se désinscrire : les notes de ce cours sont déjà validées."]);
+        exit();
+    }
+
+    try {
+        $stmtEnrollment = $pdo->prepare("SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?");
+        $stmtEnrollment->execute([$student_id, $course_id]);
+        $enrollment = $stmtEnrollment->fetch();
+        
+        if ($enrollment) {
+            $pdo->prepare("DELETE FROM grades WHERE enrollment_id = ?")->execute([$enrollment['id']]);
+            $pdo->prepare("DELETE FROM enrollments WHERE id = ?")->execute([$enrollment['id']]);
+        }
+        jsonResponse(["message" => "Désinscription réussie."]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["error" => "Erreur serveur lors de la désinscription."]);
+    }
+}
 ?>

@@ -19,7 +19,11 @@ if ($method === 'GET') {
             JOIN enrollments e ON c.id = e.course_id
             JOIN users u ON c.teacher_id = u.id
             WHERE e.student_id = ?
-            ORDER BY FIELD(s.day_of_week, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'), s.start_time
+            ORDER BY 
+                CASE s.day_of_week 
+                    WHEN 'Lundi' THEN 1 WHEN 'Mardi' THEN 2 WHEN 'Mercredi' THEN 3 WHEN 'Jeudi' THEN 4 WHEN 'Vendredi' THEN 5 ELSE 6 
+                END, 
+                s.start_time
         ");
         $stmt->execute([$user_id]);
     } elseif ($role === 'teacher') {
@@ -29,7 +33,11 @@ if ($method === 'GET') {
             FROM schedules s
             JOIN courses c ON s.course_id = c.id
             WHERE c.teacher_id = ?
-            ORDER BY FIELD(s.day_of_week, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'), s.start_time
+            ORDER BY 
+                CASE s.day_of_week 
+                    WHEN 'Lundi' THEN 1 WHEN 'Mardi' THEN 2 WHEN 'Mercredi' THEN 3 WHEN 'Jeudi' THEN 4 WHEN 'Vendredi' THEN 5 ELSE 6 
+                END, 
+                s.start_time
         ");
         $stmt->execute([$user_id]);
     } else {
@@ -39,7 +47,11 @@ if ($method === 'GET') {
             FROM schedules s
             JOIN courses c ON s.course_id = c.id
             JOIN users u ON c.teacher_id = u.id
-            ORDER BY FIELD(s.day_of_week, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'), s.start_time
+            ORDER BY 
+                CASE s.day_of_week 
+                    WHEN 'Lundi' THEN 1 WHEN 'Mardi' THEN 2 WHEN 'Mercredi' THEN 3 WHEN 'Jeudi' THEN 4 WHEN 'Vendredi' THEN 5 ELSE 6 
+                END, 
+                s.start_time
         ");
         $stmt->execute();
     }
