@@ -140,7 +140,7 @@ elseif ($method === 'PUT') {
     $stmtCheckStatus->execute([$enrollment_id]);
     $courseStatus = $stmtCheckStatus->fetchColumn();
 
-    if ($courseStatus === 'validé') {
+    if ($courseStatus === 'validé' && $_SESSION['role'] !== 'admin') {
         http_response_code(403);
         echo json_encode(["error" => "Les notes de ce cours sont verrouillées après validation finale."]);
         exit();
