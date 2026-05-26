@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../api/apiClient';
-import { AlertCircle, CheckCircle, BookOpen } from 'lucide-react';
+import { AlertCircle, CheckCircle, BookOpen, Trash2 } from 'lucide-react';
 
 const StudentEnrollment = () => {
   const { user } = useContext(AuthContext);
@@ -63,6 +63,32 @@ const StudentEnrollment = () => {
     }
   };
 
+  const handleUnenroll = async (courseId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir vous désinscrire de ce cours ?")) return;
+    
+    setEnrolling(courseId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await apiClient.delete(`/enrollments.php?course_id=${courseId}`);
+      setSuccess(`Désinscription réussie.`);
+      
+      // Actualiser les données
+      const coursesResponse = await apiClient.get('/courses.php');
+      setAvailableCourses(coursesResponse.data || []);
+      const enrollmentsResponse = await apiClient.get('/students.php?enrolled=true');
+      setEnrolledCourses(enrollmentsResponse.data || []);
+      
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Erreur lors de la désinscription';
+      setError(errorMsg);
+    } finally {
+      setEnrolling(null);
+    }
+  };
+
   const isEnrolled = (courseId) => {
     return enrolledCourses.some(c => c.id === courseId);
   };
@@ -111,9 +137,14 @@ const StudentEnrollment = () => {
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   {isEnrolled(course.id) ? (
-                    <button disabled className="flex-1 px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold flex items-center justify-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Inscrit
+                    <button 
+                      onClick={() => handleUnenroll(course.id)}
+                      disabled={enrolling === course.id}
+                      className="flex-1 px-4 py-2 bg-red-100 text-red-800 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-200 transition"
+                      title="Se désinscrire"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {enrolling === course.id ? '...' : 'Désinscription'}
                     </button>
                   ) : (
                     <button
@@ -151,7 +182,14 @@ const StudentEnrollment = () => {
                         </p>
                       )}
                     </div>
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <button 
+                      onClick={() => handleUnenroll(course.id)}
+                      disabled={enrolling === course.id}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition"
+                      title="Se désinscrire"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               ))}

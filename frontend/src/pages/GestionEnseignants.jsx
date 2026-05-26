@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Eye, X, BookOpen, Users, BarChart2, Edit } from 'lucide-react';
+import { Mail, Plus, Trash2, Eye, X, BookOpen, Users, BarChart2, Edit, Search } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
 const GestionEnseignants = () => {
@@ -14,6 +14,7 @@ const GestionEnseignants = () => {
   const [teacherCourses, setTeacherCourses] = useState([]);
   const [teacherStudents, setTeacherStudents] = useState({});
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -137,14 +138,35 @@ const GestionEnseignants = () => {
     }
   };
 
+  const filteredTeachers = teachers.filter(teacher => {
+    const query = searchQuery.toLowerCase();
+    return (
+      teacher.first_name.toLowerCase().includes(query) ||
+      teacher.last_name.toLowerCase().includes(query) ||
+      teacher.email.toLowerCase().includes(query) ||
+      (teacher.department && teacher.department.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <div className="max-w-full">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold">Gestion des Enseignants</h1>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
-          <Plus className="w-5 h-5" />
-          Ajouter un enseignant
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="search-container">
+            <input 
+              className="search-input" 
+              placeholder="Rechercher un enseignant..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search className="search-icon w-4 h-4" />
+          </div>
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
+            <Plus className="w-5 h-5" />
+            Ajouter un enseignant
+          </button>
+        </div>
       </div>
 
       {/* Modal ajout */}
@@ -442,14 +464,14 @@ const GestionEnseignants = () => {
                 </tr>
               </thead>
               <tbody>
-                {teachers.length === 0 ? (
+                {filteredTeachers.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-8 text-center text-[var(--color-text-muted)]">
-                      Aucun enseignant trouvé
+                      {searchQuery ? 'Aucun enseignant trouvé correspondant à votre recherche' : 'Aucun enseignant trouvé'}
                     </td>
                   </tr>
                 ) : (
-                  teachers.map((teacher) => (
+                  filteredTeachers.map((teacher) => (
                     <tr key={teacher.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors">
                       <td className="px-6 py-4 font-medium">{teacher.first_name} {teacher.last_name}</td>
                       <td className="px-6 py-4">
@@ -491,7 +513,7 @@ const GestionEnseignants = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text-muted)]">
-            Total : {teachers.length} enseignant{teachers.length > 1 ? 's' : ''}
+            Total : {filteredTeachers.length} enseignant{filteredTeachers.length > 1 ? 's' : ''} {searchQuery && `(${teachers.length} au total)`}
           </div>
         </div>
       )}

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Mail, Plus, Trash2, Eye, Calendar, X, Award, BookOpen, TrendingUp, Edit } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Plus, Trash2, Eye, Calendar, X, Award, BookOpen, TrendingUp, Edit, Search } from 'lucide-react';
 import apiClient from '../api/apiClient';
-import { SearchContext } from '../context/SearchContext';
 
 const GestionEtudiants = () => {
   const [students, setStudents] = useState([]);
@@ -15,7 +14,7 @@ const GestionEtudiants = () => {
   const [studentGrades, setStudentGrades] = useState([]);
   const [studentRank, setStudentRank] = useState(null);
   const [loadingGrades, setLoadingGrades] = useState(false);
-  const { searchQuery } = useContext(SearchContext);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -211,12 +210,23 @@ const GestionEtudiants = () => {
 
   return (
     <div className="max-w-full">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold">Gestion des Étudiants</h1>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
-          <Plus className="w-5 h-5" />
-          Ajouter un étudiant
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="search-container">
+            <input 
+              className="search-input" 
+              placeholder="Rechercher un étudiant..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search className="search-icon w-4 h-4" />
+          </div>
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
+            <Plus className="w-5 h-5" />
+            Ajouter un étudiant
+          </button>
+        </div>
       </div>
 
       {/* Modal ajout */}
