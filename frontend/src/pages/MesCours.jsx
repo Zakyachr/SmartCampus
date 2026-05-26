@@ -13,9 +13,40 @@ const MesCours = () => {
     const fetchCourses = async () => {
       try {
         if (user?.role === 'student') {
-          // Utiliser le nouvel endpoint pour les étudiants
-          const response = await apiClient.get('/student_courses.php');
-          setCourses(response.data);
+          try {
+            // Essayer d'abord le nouvel endpoint enrichi (moyenne classe + rang)
+            const response = await apiClient.get('/student_courses.php');
+            if (Array.isArray(response.data)) {
+              setCourses(response.data);
+            } else {
+              throw new Error('Format invalide');
+            }
+          } catch (primaryErr) {
+            // Fallback : utiliser grades.php qui existe déjà chez tout le monde
+            console.warn('student_courses.php non disponible, fallback sur grades.php', primaryErr);
+            const response = await apiClient.get('/grades.php');
+            if (Array.isArray(response.data)) {
+              // Transformer les données de grades.php pour correspondre au format attendu
+              const mappedCourses = response.data.map(grade => ({
+                course_id: grade.course_id,
+                code: grade.course_code,
+                title: grade.course_title,
+                status: 'ouvert',
+                teacher_first_name: grade.teacher_first_name,
+                teacher_last_name: grade.teacher_last_name,
+                cc1: grade.cc1,
+                cc2: grade.cc2,
+                final_exam: grade.final_exam,
+                student_average: grade.final_grade ? parseFloat(grade.final_grade) : null,
+                class_average: null,  // Non disponible sans student_courses.php
+                rank: null,           // Non disponible sans student_courses.php
+                total_students: 0,
+              }));
+              setCourses(mappedCourses);
+            } else {
+              setError('Erreur lors du chargement des cours');
+            }
+          }
         } else {
           // Pour les autres rôles, garder l'ancien comportement
           const response = await apiClient.get('/courses.php');
