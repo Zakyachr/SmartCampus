@@ -37,3 +37,9 @@ body { margin:0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Rob
 /* small helpers */
 .text-20px { font-size: 20px; }
 .card p, .card div { color: var(--color-text); }
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
