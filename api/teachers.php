@@ -56,7 +56,7 @@ elseif ($method === 'POST') {
         exit();
     }
 
-    $defaultPassword = password_hash('password123', PASSWORD_BCRYPT);
+    $defaultPassword = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
 
     try {
         $pdo->beginTransaction();

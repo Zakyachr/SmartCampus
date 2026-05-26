@@ -2,11 +2,42 @@
 require_once 'config/db.php';
 require_once 'middleware/auth_check.php';
 
-requireRole(['student', 'admin']);
-
 $method = $_SERVER['REQUEST_METHOD'];
 
-if ($method === 'POST') {
+if ($method === 'GET') {
+    // Les profs et admins peuvent voir les élèves inscrits à un cours
+    requireRole(['teacher', 'admin', 'student']);
+    
+    if (isset($_GET['course_id'])) {
+        $course_id = filter_var($_GET['course_id'], FILTER_VALIDATE_INT);
+        
+        if (!$course_id) {
+            http_response_code(400);
+            echo json_encode(["error" => "ID du cours invalide."]);
+            exit();
+        }
+        
+        // Retourner les élèves inscrits à ce cours
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT 
+                u.id, u.first_name, u.last_name, u.email,
+                s.student_number, s.major, s.level
+            FROM users u
+            JOIN students s ON u.id = s.id
+            JOIN enrollments e ON s.id = e.student_id
+            WHERE e.course_id = ?
+            ORDER BY u.last_name, u.first_name
+        ");
+        $stmt->execute([$course_id]);
+        jsonResponse($stmt->fetchAll());
+    } else {
+        http_response_code(400);
+        echo json_encode(["error" => "Paramètre course_id requis."]);
+        exit();
+    }
+}
+elseif ($method === 'POST') {
+    requireRole(['student', 'admin']);
     $data = json_decode(file_get_contents("php://input"), true);
     
     // Si c'est un étudiant, on force son ID. Si c'est un admin, il peut inscrire qui il veut.
@@ -82,6 +113,18 @@ if ($method === 'POST') {
     try {
         $stmt = $pdo->prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)");
         $stmt->execute([$student_id, $course_id]);
+        $enrollment_id = $pdo->lastInsertId();
+
+        // Créer automatiquement une ligne dans grades pour cette inscription
+        // Le professeur pourra ensuite ajouter les notes
+        $stmtGrade = $pdo->prepare("
+            INSERT INTO grades (enrollment_id, first_name, last_name) 
+            SELECT ?, u.first_name, u.last_name 
+            FROM users u 
+            WHERE u.id = ?
+        ");
+        $stmtGrade->execute([$enrollment_id, $student_id]);
+
         jsonResponse(["message" => "Inscription réussie."], 201);
     } catch (PDOException $e) {
         if ($e->getCode() == 23000) { // Code erreur MySQL pour violation de contrainte d'unicité

@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { SearchContext } from '../context/SearchContext';
 import apiClient from '../api/apiClient';
 import { Users, BookOpen } from 'lucide-react';
 
 const TeacherStudents = () => {
   const { user } = useContext(AuthContext);
+  const { searchQuery } = useContext(SearchContext);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -66,6 +68,16 @@ const TeacherStudents = () => {
 
   const selectedCourseData = courses.find(c => c.id === selectedCourse);
 
+  // Filtrer les élèves selon la recherche
+  const filteredStudents = students.filter(student => {
+    const query = searchQuery.toLowerCase();
+    return (
+      student.first_name.toLowerCase().includes(query) ||
+      student.last_name.toLowerCase().includes(query) ||
+      (student.student_number && student.student_number.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Mes Élèves</h1>
@@ -91,11 +103,11 @@ const TeacherStudents = () => {
         <div className="p-6 border-b border-[var(--color-border)] bg-[#F9FAFB]">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <Users className="w-5 h-5" />
-            {selectedCourseData?.title} ({students.length} élève{students.length > 1 ? 's' : ''})
+            {selectedCourseData?.title} ({filteredStudents.length} élève{filteredStudents.length > 1 ? 's' : ''}{searchQuery && ` / ${students.length} total`})
           </h2>
         </div>
 
-        {students.length > 0 ? (
+        {filteredStudents.length > 0 ? (
           <table className="w-full">
             <thead className="bg-[#F9FAFB] border-b border-[var(--color-border)]">
               <tr>
@@ -107,7 +119,7 @@ const TeacherStudents = () => {
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => (
+              {filteredStudents.map((student) => (
                 <tr key={student.id} className="border-b border-[var(--color-border)] hover:bg-[#F9FAFB] transition">
                   <td className="px-6 py-4 font-mono text-sm">{student.student_number}</td>
                   <td className="px-6 py-4 font-semibold">{student.last_name}</td>
@@ -121,7 +133,7 @@ const TeacherStudents = () => {
         ) : (
           <div className="p-8 text-center">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-[var(--color-text-muted)]">Aucun élève inscrit à ce cours</p>
+            <p className="text-[var(--color-text-muted)]">{searchQuery ? 'Aucun élève trouvé correspondant à votre recherche' : 'Aucun élève inscrit à ce cours'}</p>
           </div>
         )}
       </div>
