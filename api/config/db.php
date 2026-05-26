@@ -14,16 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Configuration BDD - SPÉCIALE MAMP
-$host = '127.0.0.1';
-$port = '3306'; // Port par défaut de MySQL sur Windows         // Port MySQL par défaut de MAMP
-$db   = 'smartcampus_db';
-$user = 'root';         // Utilisateur par défaut de MAMP
-$pass = 'root';         // Mot de passe par défaut de MAMP
-$charset = 'utf8mb4';
+// Configuration BDD - C'est maintenant une base de données sous forme de fichier
+// Cela permet de n'avoir qu'un fichier "database.sqlite" qui se mettra à jour automatiquement !
+// Plus besoin de configurer MySQL ou de lancer le serveur MySQL de MAMP
 
-// Le DSN (Data Source Name) inclut maintenant le port 8889
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+$dbFile = __DIR__ . '/database.sqlite';
+// Le DSN (Data Source Name) utilise le driver SQLite
+$dsn = "sqlite:" . $dbFile;
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Affiche les erreurs SQL proprement
@@ -32,12 +29,16 @@ $options = [
 ];
 
 try {
-    // Tentative de connexion à la base de données
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    // Tentative de connexion (Puisque c'est SQLite, le fichier sera accédé directement via PHP)
+    $pdo = new PDO($dsn, null, null, $options);
+    
+    // Activer les clés étrangères pour SQLite
+    $pdo->exec("PRAGMA foreign_keys = ON;");
+    
 } catch (\PDOException $e) {
-    // Si la connexion échoue (ex: MAMP n'est pas lancé), on renvoie une erreur JSON claire
+    // Si la connexion échoue
     http_response_code(500);
-    echo json_encode(["error" => "Erreur de connexion à la base de données. Vérifiez que MySQL est lancé sur MAMP."]);
+    echo json_encode(["error" => "Erreur de connexion à la base de données SQLite : " . $e->getMessage()]);
     exit();
 }
 ?>
