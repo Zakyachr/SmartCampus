@@ -5,6 +5,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoginPage from './pages/auth/LoginPage';
 import GestionEtudiants from './pages/GestionEtudiants';
+import GestionEnseignants from './pages/GestionEnseignants';
+import GestionCours from './pages/GestionCours';
 import StudentDashboard from './pages/StudentDashboard';
 import MesCours from './pages/MesCours';
 import MesNotes from './pages/MesNotes';
@@ -72,6 +74,8 @@ function App() {
                                 <Routes>
                                     <Route path="dashboard" element={<AdminDashboard />} />
                                     <Route path="etudiants" element={<GestionEtudiants />} />
+                                    <Route path="enseignants" element={<GestionEnseignants />} />
+                                    <Route path="cours" element={<GestionCours />} />
                                     <Route path="seed" element={<AdminSeed />} />
                                 </Routes>
                             </AppLayout>

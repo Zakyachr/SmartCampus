@@ -1,47 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Eye, Calendar } from 'lucide-react';
+import { Mail, Plus, Trash2, Eye } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
-const GestionEtudiants = () => {
-  const [students, setStudents] = useState([]);
+const GestionEnseignants = () => {
+  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchStudents();
+    fetchTeachers();
   }, []);
 
-  const fetchStudents = async () => {
+  const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/students.php');
-      setStudents(response.data);
+      const response = await apiClient.get('/teachers.php');
+      setTeachers(response.data);
       setError(null);
     } catch (err) {
-      setError('Erreur lors du chargement des étudiants');
+      setError('Erreur lors du chargement des enseignants');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
   return (
     <div className="max-w-full">
       <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Gestion des Étudiants</h1>
+        <h1 className="text-3xl font-bold">Gestion des Enseignants</h1>
         <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)]">
           <Plus className="w-5 h-5" />
-          Ajouter un étudiant
+          Ajouter un enseignant
         </button>
       </div>
 
@@ -53,7 +43,7 @@ const GestionEtudiants = () => {
 
       {loading ? (
         <div className="card p-8 text-center">
-          <p className="text-[var(--color-text-muted)]">Chargement des étudiants...</p>
+          <p className="text-[var(--color-text-muted)]">Chargement des enseignants...</p>
         </div>
       ) : (
         <div className="card p-0">
@@ -63,39 +53,28 @@ const GestionEtudiants = () => {
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                   <th className="px-6 py-4 text-left text-sm font-semibold">Nom</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Numéro Étudiant</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Date de naissance</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Filière</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Niveau</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Département</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {students.length === 0 ? (
+                {teachers.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-[var(--color-text-muted)]">
-                      Aucun étudiant trouvé
+                    <td colSpan="4" className="px-6 py-8 text-center text-[var(--color-text-muted)]">
+                      Aucun enseignant trouvé
                     </td>
                   </tr>
                 ) : (
-                  students.map((student) => (
-                    <tr key={student.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]">
-                      <td className="px-6 py-4 font-medium">{student.first_name} {student.last_name}</td>
+                  teachers.map((teacher) => (
+                    <tr key={teacher.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]">
+                      <td className="px-6 py-4 font-medium">{teacher.first_name} {teacher.last_name}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Mail className="w-4 h-4 text-[var(--color-text-muted)]" />
-                          {student.email}
+                          {teacher.email}
                         </div>
                       </td>
-                      <td className="px-6 py-4">{student.student_number}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-[var(--color-text-muted)]" />
-                          {formatDate(student.date_of_birth)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">{student.major || '-'}</td>
-                      <td className="px-6 py-4">{student.level || '-'}</td>
+                      <td className="px-6 py-4">{teacher.department || '-'}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button className="p-2 hover:bg-blue-50 rounded text-blue-600" title="Voir">
@@ -113,7 +92,7 @@ const GestionEtudiants = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text-muted)]">
-            Total : {students.length} étudiant{students.length > 1 ? 's' : ''}
+            Total : {teachers.length} enseignant{teachers.length > 1 ? 's' : ''}
           </div>
         </div>
       )}
@@ -121,4 +100,4 @@ const GestionEtudiants = () => {
   );
 };
 
-export default GestionEtudiants;
+export default GestionEnseignants;

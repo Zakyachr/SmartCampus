@@ -2,18 +2,57 @@
 require_once 'config/db.php';
 require_once 'middleware/auth_check.php';
 
-// Les profs et admins peuvent voir la liste des étudiants
-requireRole(['admin', 'teacher']);
-
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $stmt = $pdo->query("
-        SELECT u.id, u.first_name, u.last_name, u.email, s.student_number, s.major, s.level 
-        FROM users u 
-        JOIN students s ON u.id = s.id
-    ");
-    jsonResponse($stmt->fetchAll());
+    // Les profs et admins peuvent voir la liste des étudiants
+    requireRole(['admin', 'teacher', 'student']);
+    
+    // Si c'est un étudiant qui demande ses inscriptions
+    if ($_SESSION['role'] === 'student' && isset($_GET['enrolled']) && $_GET['enrolled'] === 'true') {
+        $stmt = $pdo->prepare("
+            SELECT c.*, u.first_name as teacher_first_name, u.last_name as teacher_last_name,
+                   s.day_of_week, s.start_time, s.end_time, s.room
+            FROM enrollments e
+            JOIN courses c ON e.course_id = c.id
+            LEFT JOIN users u ON c.teacher_id = u.id
+            LEFT JOIN schedules s ON c.id = s.course_id
+            WHERE e.student_id = ?
+            ORDER BY c.title
+        ");
+        $stmt->execute([$_SESSION['user_id']]);
+        jsonResponse($stmt->fetchAll());
+    }
+    // Si c'est pour récupérer les inscriptions d'un cours
+    elseif (isset($_GET['course_id'])) {
+        requireRole(['admin', 'teacher']);
+        
+        $course_id = filter_var($_GET['course_id'], FILTER_VALIDATE_INT);
+        
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT 
+                u.id, u.first_name, u.last_name, u.email,
+                s.student_number, s.major, s.level
+            FROM users u
+            JOIN students s ON u.id = s.id
+            JOIN enrollments e ON s.id = e.student_id
+            WHERE e.course_id = ?
+            ORDER BY u.last_name, u.first_name
+        ");
+        $stmt->execute([$course_id]);
+        jsonResponse($stmt->fetchAll());
+    }
+    // Sinon, liste générale des étudiants
+    else {
+        requireRole(['admin', 'teacher']);
+        
+        $stmt = $pdo->query("
+            SELECT u.id, u.first_name, u.last_name, u.email, s.student_number, s.major, s.level, s.date_of_birth 
+            FROM users u 
+            JOIN students s ON u.id = s.id
+        ");
+        jsonResponse($stmt->fetchAll());
+    }
 } 
 elseif ($method === 'POST') {
     requireRole(['admin']); // Seul l'admin crée des étudiants
