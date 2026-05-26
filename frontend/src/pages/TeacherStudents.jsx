@@ -1,12 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { SearchContext } from '../context/SearchContext';
 import apiClient from '../api/apiClient';
-import { Users, BookOpen } from 'lucide-react';
+import { Users, BookOpen, Search } from 'lucide-react';
 
 const TeacherStudents = () => {
   const { user } = useContext(AuthContext);
-  const { searchQuery } = useContext(SearchContext);
+  const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const initialCourseId = location.state?.courseId;
+
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -24,7 +27,7 @@ const TeacherStudents = () => {
         setCourses(teacherCourses);
         
         if (teacherCourses.length > 0) {
-          setSelectedCourse(teacherCourses[0].id);
+          setSelectedCourse(initialCourseId || teacherCourses[0].id);
         }
       } catch (err) {
         console.error('Erreur:', err);
@@ -82,20 +85,31 @@ const TeacherStudents = () => {
     <div>
       <h1 className="text-2xl font-bold mb-6">Mes Élèves</h1>
 
-      {/* Sélection du cours */}
-      <div className="mb-6">
-        <label className="block text-sm font-semibold mb-2">Sélectionner un cours:</label>
-        <select
-          value={selectedCourse}
-          onChange={(e) => setSelectedCourse(parseInt(e.target.value))}
-          className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg bg-white"
-        >
-          {courses.map((course) => (
-            <option key={course.id} value={course.id}>
-              {course.code} - {course.title}
-            </option>
-          ))}
-        </select>
+      {/* Sélection du cours et Recherche */}
+      <div className="mb-6 flex gap-4 flex-wrap items-end">
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-sm font-semibold mb-2">Sélectionner un cours:</label>
+          <select
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(parseInt(e.target.value))}
+            className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg bg-white outline-none focus:border-[var(--color-primary)]"
+          >
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.code} - {course.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="search-container">
+          <input 
+            className="search-input" 
+            placeholder="Rechercher un élève..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="search-icon w-4 h-4" />
+        </div>
       </div>
 
       {/* Liste des élèves */}

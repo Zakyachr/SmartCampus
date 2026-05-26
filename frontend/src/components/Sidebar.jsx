@@ -18,7 +18,6 @@ const Sidebar = () => {
     admin: [
       { path: '/admin/dashboard', label: 'Tableau de bord', icon: Home },
       { path: '/admin/etudiants', label: 'Étudiants', icon: Users },
-      { path: '/admin/seed', label: 'Importer Données', icon: BookOpen },
       { path: '/admin/enseignants', label: 'Enseignants', icon: Users },
       { path: '/admin/cours', label: 'Cours', icon: BookOpen },
       { path: '/admin/rapports', label: 'Rapports', icon: BarChart2 },

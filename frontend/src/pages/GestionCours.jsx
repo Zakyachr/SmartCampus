@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar } from 'lucide-react';
+import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar, Search, Filter } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
 const GestionCours = () => {
@@ -10,6 +10,10 @@ const GestionCours = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseStudents, setCourseStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('tous');
+  const [sortBy, setSortBy] = useState('title_asc');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -224,14 +228,70 @@ const GestionCours = () => {
     }
   };
 
+  const filteredAndSortedCourses = courses
+    .filter(course => {
+      // Filtrage par statut
+      if (statusFilter !== 'tous' && course.status !== statusFilter) return false;
+      // Recherche
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const title = (course.title || '').toLowerCase();
+        const code = (course.code || '').toLowerCase();
+        if (!title.includes(query) && !code.includes(query)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'title_asc') return (a.title || '').localeCompare(b.title || '');
+      if (sortBy === 'title_desc') return (b.title || '').localeCompare(a.title || '');
+      if (sortBy === 'code_asc') return (a.code || '').localeCompare(b.code || '');
+      if (sortBy === 'code_desc') return (b.code || '').localeCompare(a.code || '');
+      return 0;
+    });
+
   return (
     <div className="max-w-full">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold">Gestion des Cours</h1>
-        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
+        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20 whitespace-nowrap">
           <Plus className="w-5 h-5" />
           Ajouter un cours
         </button>
+      </div>
+
+      <div className="flex flex-wrap gap-4 mb-6">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par titre ou code..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-[var(--color-border)] rounded-lg bg-white"
+          />
+        </div>
+        <div className="relative min-w-[150px]">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full pl-10 pr-8 py-2 border border-[var(--color-border)] rounded-lg appearance-none bg-white"
+          >
+            <option value="tous">Tous les statuts</option>
+            <option value="ouvert">Ouvert</option>
+            <option value="validé">Validé</option>
+          </select>
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="px-4 py-2 border border-[var(--color-border)] rounded-lg bg-white min-w-[150px]"
+        >
+          <option value="title_asc">Titre (A-Z)</option>
+          <option value="title_desc">Titre (Z-A)</option>
+          <option value="code_asc">Code (A-Z)</option>
+          <option value="code_desc">Code (Z-A)</option>
+        </select>
       </div>
 
       {/* Modal Ajout Cours */}
@@ -638,14 +698,14 @@ const GestionCours = () => {
                 </tr>
               </thead>
               <tbody>
-                {courses.length === 0 ? (
+                {filteredAndSortedCourses.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-8 text-center text-[var(--color-text-muted)]">
                       Aucun cours trouvé
                     </td>
                   </tr>
                 ) : (
-                  courses.map((course) => (
+                  filteredAndSortedCourses.map((course) => (
                     <tr key={course.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors">
                       <td className="px-6 py-4 font-medium text-[var(--color-primary)]">{course.code}</td>
                       <td className="px-6 py-4">
@@ -713,7 +773,7 @@ const GestionCours = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text-muted)]">
-            Total : {courses.length} cours
+            Total : {filteredAndSortedCourses.length} cours
           </div>
         </div>
       )}
