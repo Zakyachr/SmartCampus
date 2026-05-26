@@ -20,6 +20,7 @@ const Sidebar = () => {
       { path: '/admin/etudiants', label: 'Étudiants', icon: Users },
       { path: '/admin/enseignants', label: 'Enseignants', icon: Users },
       { path: '/admin/cours', label: 'Cours', icon: BookOpen },
+      { path: '/admin/notes', label: 'Notes', icon: PenTool },
       { path: '/admin/rapports', label: 'Rapports', icon: BarChart2 },
       { path: '/admin/parametres', label: 'Paramètres', icon: Settings },
     ],
