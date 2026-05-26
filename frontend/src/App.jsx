@@ -10,6 +10,8 @@ import GestionEnseignants from './pages/GestionEnseignants';
 import GestionCours from './pages/GestionCours';
 import NotesEtudiants from './pages/NotesEtudiants';
 import AdminRapports from './pages/AdminRapports';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminParametres from './pages/AdminParametres';
 import StudentDashboard from './pages/StudentDashboard';
 import MesCours from './pages/MesCours';
 import MesNotes from './pages/MesNotes';
@@ -20,8 +22,6 @@ import TeacherGradeEntry from './pages/TeacherGradeEntry';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminSeed from './pages/AdminSeed';
 
-// Pages Admin (Exemples de composants à créer ensuite)
-const AdminDashboard = () => <div className="p-8"><h1 className="text-2xl font-bold">Dashboard Administrateur</h1></div>;
 // Pages Student
 // StudentDashboard imported from pages/StudentDashboard
 
@@ -81,6 +81,7 @@ function App() {
                                         <Route path="cours" element={<GestionCours />} />
                                         <Route path="notes" element={<NotesEtudiants />} />
                                         <Route path="rapports" element={<AdminRapports />} />
+                                        <Route path="parametres" element={<AdminParametres />} />
                                         <Route path="seed" element={<AdminSeed />} />
                                     </Routes>
                                 </AppLayout>

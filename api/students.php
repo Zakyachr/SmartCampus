@@ -102,4 +102,47 @@ elseif ($method === 'POST') {
         }
     }
 }
+elseif ($method === 'DELETE') {
+    requireRole(['admin']);
+    
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID étudiant manquant ou invalide."]);
+        exit();
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Supprimer les notes liées aux inscriptions de cet étudiant
+        $pdo->prepare("DELETE FROM grades WHERE enrollment_id IN (SELECT id FROM enrollments WHERE student_id = ?)")->execute([$id]);
+
+        // 2. Supprimer les inscriptions
+        $pdo->prepare("DELETE FROM enrollments WHERE student_id = ?")->execute([$id]);
+
+        // 3. Supprimer l'entrée dans students
+        $pdo->prepare("DELETE FROM students WHERE id = ?")->execute([$id]);
+
+        // 4. Supprimer l'utilisateur
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND role = 'student'");
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            http_response_code(404);
+            echo json_encode(["error" => "Étudiant introuvable."]);
+            exit();
+        }
+
+        $pdo->commit();
+        jsonResponse(["message" => "Étudiant supprimé avec succès."]);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(["error" => "Erreur lors de la suppression de l'étudiant."]);
+    }
+}
 ?>
