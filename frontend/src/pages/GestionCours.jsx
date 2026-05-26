@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Eye, Users, X } from 'lucide-react';
+import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
 const GestionCours = () => {
@@ -11,9 +11,97 @@ const GestionCours = () => {
   const [courseStudents, setCourseStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [currentSchedule, setCurrentSchedule] = useState(null);
+  const [scheduleFormData, setScheduleFormData] = useState({
+    day_of_week: 'Lundi',
+    start_time: '08:00',
+    end_time: '10:00',
+    room: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [teachers, setTeachers] = useState([]);
+  const [formData, setFormData] = useState({
+    code: '',
+    title: '',
+    description: '',
+    teacher_id: '',
+    teacher_id: '',
+    max_capacity: 30
+  });
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    code: '',
+    title: '',
+    description: '',
+    teacher_id: '',
+    max_capacity: 30
+  });
+
   useEffect(() => {
     fetchCourses();
+    fetchTeachers();
   }, []);
+
+  const fetchTeachers = async () => {
+    try {
+      const response = await apiClient.get('/teachers.php');
+      setTeachers(response.data);
+    } catch (err) {
+      console.error('Erreur chargement enseignants:', err);
+    }
+  };
+
+  const handleAddCourse = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await apiClient.post('/courses.php', formData);
+      setShowAddModal(false);
+      setFormData({
+        code: '',
+        title: '',
+        description: '',
+        teacher_id: '',
+        max_capacity: 30
+      });
+      fetchCourses();
+    } catch (err) {
+      alert('Erreur lors de l\'ajout du cours: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await apiClient.put(`/courses.php?id=${editFormData.id}`, editFormData);
+      setShowEditModal(false);
+      fetchCourses();
+    } catch (err) {
+      alert('Erreur lors de la modification du cours: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (course) => {
+    setEditFormData({
+      id: course.id,
+      code: course.code,
+      title: course.title,
+      description: course.description || '',
+      teacher_id: course.teacher_id || '',
+      max_capacity: course.max_capacity || 30
+    });
+    setShowEditModal(true);
+  };
 
   const fetchCourses = async () => {
     try {
@@ -45,6 +133,84 @@ const GestionCours = () => {
     }
   };
 
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      setDeleting(true);
+      await apiClient.delete(`/courses.php?id=${courseId}`);
+      setShowDeleteConfirm(null);
+      fetchCourses();
+    } catch (err) {
+      alert("Erreur lors de la suppression : " + (err.response?.data?.error || err.message));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleViewSchedule = async (course) => {
+    setSelectedCourse(course);
+    setLoadingStudents(true);
+    setShowScheduleModal(true);
+    setCurrentSchedule(null);
+    setScheduleFormData({
+      day_of_week: 'Lundi',
+      start_time: '08:00',
+      end_time: '10:00',
+      room: ''
+    });
+    
+    try {
+      const res = await apiClient.get('/schedules.php');
+      const schedule = res.data.find(s => s.course_id === course.id);
+      if (schedule) {
+        setCurrentSchedule(schedule);
+        setScheduleFormData({
+          day_of_week: schedule.day_of_week,
+          start_time: schedule.start_time.substring(0, 5),
+          end_time: schedule.end_time.substring(0, 5),
+          room: schedule.room
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleScheduleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      const payload = { ...scheduleFormData, course_id: selectedCourse.id };
+      if (currentSchedule) {
+        await apiClient.put(`/schedules.php?id=${currentSchedule.id}`, payload);
+      } else {
+        await apiClient.post('/schedules.php', payload);
+      }
+      alert('Horaire enregistré avec succès.');
+      setShowScheduleModal(false);
+    } catch (err) {
+      alert('Erreur: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (!window.confirm("Supprimer l'horaire de ce cours ?")) return;
+    try {
+      setSubmitting(true);
+      await apiClient.delete(`/schedules.php?id=${currentSchedule.id}`);
+      setCurrentSchedule(null);
+      alert('Horaire supprimé.');
+      setShowScheduleModal(false);
+    } catch (err) {
+      alert('Erreur: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch(status) {
       case 'ouvert':
@@ -62,11 +228,291 @@ const GestionCours = () => {
     <div className="max-w-full">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestion des Cours</h1>
-        <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
+        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
           <Plus className="w-5 h-5" />
           Ajouter un cours
         </button>
       </div>
+
+      {/* Modal Ajout Cours */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
+          <div className="card w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-[var(--color-border)]">
+              <h2 className="text-2xl font-bold">Ajouter un cours</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddCourse} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Code (ex: CS101)"
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Titre"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="col-span-2 px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                />
+                <select
+                  value={formData.teacher_id}
+                  onChange={(e) => setFormData({...formData, teacher_id: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                >
+                  <option value="">Sélectionner un enseignant</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.first_name} {teacher.last_name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Capacité Max"
+                  value={formData.max_capacity}
+                  onChange={(e) => setFormData({...formData, max_capacity: parseInt(e.target.value) || ''})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                  min="1"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+                >
+                  {submitting ? 'Ajout...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Modification Cours */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
+          <div className="card w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-[var(--color-border)]">
+              <h2 className="text-2xl font-bold">Modifier un cours</h2>
+              <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Code (ex: CS101)"
+                  value={editFormData.code}
+                  onChange={(e) => setEditFormData({...editFormData, code: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Titre"
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                  className="col-span-2 px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                />
+                <select
+                  value={editFormData.teacher_id}
+                  onChange={(e) => setEditFormData({...editFormData, teacher_id: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                >
+                  <option value="">Sélectionner un enseignant</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.first_name} {teacher.last_name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Capacité Max"
+                  value={editFormData.max_capacity}
+                  onChange={(e) => setEditFormData({...editFormData, max_capacity: parseInt(e.target.value) || ''})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                  min="1"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+                >
+                  {submitting ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Horaires */}
+      {showScheduleModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
+          <div className="card w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Horaires : {selectedCourse.code}</h2>
+              <button onClick={() => setShowScheduleModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {loadingStudents ? (
+              <p className="text-center py-4">Chargement...</p>
+            ) : (
+              <form onSubmit={handleScheduleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Jour</label>
+                  <select
+                    value={scheduleFormData.day_of_week}
+                    onChange={e => setScheduleFormData({...scheduleFormData, day_of_week: e.target.value})}
+                    className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                    required
+                  >
+                    {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'].map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Début</label>
+                    <input
+                      type="time"
+                      value={scheduleFormData.start_time}
+                      onChange={e => setScheduleFormData({...scheduleFormData, start_time: e.target.value})}
+                      className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Fin</label>
+                    <input
+                      type="time"
+                      value={scheduleFormData.end_time}
+                      onChange={e => setScheduleFormData({...scheduleFormData, end_time: e.target.value})}
+                      className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Salle</label>
+                  <input
+                    type="text"
+                    value={scheduleFormData.room}
+                    onChange={e => setScheduleFormData({...scheduleFormData, room: e.target.value})}
+                    placeholder="Ex: Amphi A, Salle 101"
+                    className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 justify-end mt-6">
+                  {currentSchedule && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteSchedule}
+                      disabled={submitting}
+                      className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Supprimer l'horaire
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+                  >
+                    {submitting ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmation suppression */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
+          <div className="card w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-full bg-red-100">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold">Confirmer la suppression</h3>
+            </div>
+            <p className="text-[var(--color-text-muted)] mb-6">
+              Êtes-vous sûr de vouloir supprimer le cours <strong>{showDeleteConfirm.code} - {showDeleteConfirm.title}</strong> ? 
+              Cette action est irréversible et supprimera également toutes les inscriptions et les notes associées.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleDeleteCourse(showDeleteConfirm.id)}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-all"
+              >
+                {deleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal consultation des étudiants du cours */}
       {showViewModal && selectedCourse && (
@@ -236,6 +682,27 @@ const GestionCours = () => {
                             title="Voir les étudiants inscrits"
                           >
                             <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleViewSchedule(course)}
+                            className="p-2 hover:bg-purple-50 rounded text-purple-600 transition-colors" 
+                            title="Gérer les horaires"
+                          >
+                            <Calendar className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => openEditModal(course)}
+                            className="p-2 hover:bg-orange-50 rounded text-orange-600 transition-colors" 
+                            title="Modifier le cours"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setShowDeleteConfirm(course)}
+                            className="p-2 hover:bg-red-50 rounded text-red-600 transition-colors" 
+                            title="Supprimer le cours"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

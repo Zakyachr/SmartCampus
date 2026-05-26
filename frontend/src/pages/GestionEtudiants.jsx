@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Mail, Plus, Trash2, Eye, Calendar, X, Award, BookOpen, TrendingUp } from 'lucide-react';
+import { Mail, Plus, Trash2, Eye, Calendar, X, Award, BookOpen, TrendingUp, Edit } from 'lucide-react';
 import apiClient from '../api/apiClient';
 import { SearchContext } from '../context/SearchContext';
 
@@ -8,6 +8,7 @@ const GestionEtudiants = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -16,6 +17,18 @@ const GestionEtudiants = () => {
   const [loadingGrades, setLoadingGrades] = useState(false);
   const { searchQuery } = useContext(SearchContext);
   const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    student_number: '',
+    major: '',
+    level: '',
+    major: '',
+    level: '',
+    date_of_birth: ''
+  });
+  const [editFormData, setEditFormData] = useState({
+    id: '',
     first_name: '',
     last_name: '',
     email: '',
@@ -66,6 +79,34 @@ const GestionEtudiants = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await apiClient.put(`/students.php?id=${editFormData.id}`, editFormData);
+      setShowEditModal(false);
+      fetchStudents();
+    } catch (err) {
+      alert('Erreur lors de la modification de l\'étudiant: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (student) => {
+    setEditFormData({
+      id: student.id,
+      first_name: student.first_name,
+      last_name: student.last_name,
+      email: student.email,
+      student_number: student.student_number,
+      major: student.major || '',
+      level: student.level || '',
+      date_of_birth: student.date_of_birth || ''
+    });
+    setShowEditModal(true);
   };
 
   const handleDeleteStudent = async (id) => {
@@ -260,6 +301,95 @@ const GestionEtudiants = () => {
                   className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50 transition-all"
                 >
                   {submitting ? 'Ajout...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal modification */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
+          <div className="card w-full max-w-2xl max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-[var(--color-border)]">
+              <h2 className="text-2xl font-bold">Modifier un étudiant</h2>
+              <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Prénom"
+                  value={editFormData.first_name}
+                  onChange={(e) => setEditFormData({...editFormData, first_name: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Nom"
+                  value={editFormData.last_name}
+                  onChange={(e) => setEditFormData({...editFormData, last_name: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Numéro étudiant"
+                  value={editFormData.student_number}
+                  onChange={(e) => setEditFormData({...editFormData, student_number: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                  required
+                />
+                <input
+                  type="date"
+                  placeholder="Date de naissance"
+                  value={editFormData.date_of_birth}
+                  onChange={(e) => setEditFormData({...editFormData, date_of_birth: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Filière"
+                  value={editFormData.major}
+                  onChange={(e) => setEditFormData({...editFormData, major: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="Niveau (ex: ING2)"
+                  value={editFormData.level}
+                  onChange={(e) => setEditFormData({...editFormData, level: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg focus:border-[var(--color-primary)] focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50 transition-all"
+                >
+                  {submitting ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
               </div>
             </form>
@@ -476,6 +606,13 @@ const GestionEtudiants = () => {
                             title="Voir les notes et classement"
                           >
                             <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => openEditModal(student)}
+                            className="p-2 hover:bg-orange-50 rounded text-orange-600 transition-colors" 
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => setShowDeleteConfirm(student)}
