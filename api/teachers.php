@@ -2,19 +2,47 @@
 require_once 'config/db.php';
 require_once 'middleware/auth_check.php';
 
-requireRole(['admin']); // Seul l'administrateur peut gérer les enseignants
-
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $stmt = $pdo->query("
-        SELECT u.id, u.first_name, u.last_name, u.email, t.department 
-        FROM users u 
-        JOIN teachers t ON u.id = t.id
-    ");
-    jsonResponse($stmt->fetchAll());
+    // Si admin : voir tous les profs
+    if ($_SESSION['role'] === 'admin') {
+        requireRole(['admin']);
+        $stmt = $pdo->query("
+            SELECT u.id, u.first_name, u.last_name, u.email, t.department 
+            FROM users u 
+            JOIN teachers t ON u.id = t.id
+        ");
+        jsonResponse($stmt->fetchAll());
+    }
+    // Si prof : voir ses élèves
+    elseif ($_SESSION['role'] === 'teacher') {
+        requireRole(['teacher']);
+        $teacher_id = $_SESSION['user_id'];
+        
+        // Récupérer tous les élèves inscrits aux cours de ce prof
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT 
+                u.id, u.first_name, u.last_name, u.email,
+                s.student_number, s.major, s.level,
+                COUNT(e.course_id) as course_count
+            FROM users u
+            JOIN students s ON u.id = s.id
+            JOIN enrollments e ON s.id = e.student_id
+            JOIN courses c ON e.course_id = c.id
+            WHERE c.teacher_id = ?
+            GROUP BY u.id
+            ORDER BY u.last_name, u.first_name
+        ");
+        $stmt->execute([$teacher_id]);
+        jsonResponse($stmt->fetchAll());
+    } else {
+        requireRole(['admin', 'teacher']);
+    }
 } 
 elseif ($method === 'POST') {
+    requireRole(['admin']); // Seul l'administrateur peut créer les enseignants
+    
     $data = json_decode(file_get_contents("php://input"), true);
     
     $email = filter_var($data['email'] ?? '', FILTER_SANITIZE_EMAIL);

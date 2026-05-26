@@ -116,16 +116,17 @@ CREATE TABLE `students` (
   `id` int(11) NOT NULL,
   `student_number` varchar(50) NOT NULL,
   `major` varchar(100) DEFAULT NULL,
-  `level` varchar(50) DEFAULT NULL
+  `level` varchar(50) DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Déchargement des données de la table `students`
 --
 
-INSERT INTO `students` (`id`, `student_number`, `major`, `level`) VALUES
-(4, 'E20260001', 'Génie Logiciel', 'ING2'),
-(5, 'E20260002', 'Systèmes Embarqués', 'ING2');
+INSERT INTO `students` (`id`, `student_number`, `major`, `level`, `date_of_birth`) VALUES
+(4, 'E20260001', 'Génie Logiciel', 'ING2', '2004-03-15'),
+(5, 'E20260002', 'Systèmes Embarqués', 'ING2', '2004-07-22');
 
 -- --------------------------------------------------------
 
