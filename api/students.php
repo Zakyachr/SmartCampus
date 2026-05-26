@@ -72,8 +72,8 @@ elseif ($method === 'POST') {
         exit();
     }
 
-    // Mot de passe par défaut pour un nouvel utilisateur
-    $defaultPassword = password_hash('password123', PASSWORD_BCRYPT);
+    // Mot de passe par défaut pour un nouvel utilisateur (hash pour "password")
+    $defaultPassword = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
 
     try {
         $pdo->beginTransaction();

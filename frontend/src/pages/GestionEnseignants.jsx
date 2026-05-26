@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, Eye } from 'lucide-react';
+import { Mail, Plus, Trash2, Eye, X } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
 const GestionEnseignants = () => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    department: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchTeachers();
@@ -25,15 +33,102 @@ const GestionEnseignants = () => {
     }
   };
 
+  const handleAddTeacher = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await apiClient.post('/teachers.php', formData);
+      setShowModal(false);
+      setFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        department: ''
+      });
+      fetchTeachers();
+    } catch (err) {
+      alert('Erreur lors de l\'ajout de l\'enseignant: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-full">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestion des Enseignants</h1>
-        <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)]">
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)]">
           <Plus className="w-5 h-5" />
           Ajouter un enseignant
         </button>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-[var(--color-border)]">
+              <h2 className="text-2xl font-bold">Ajouter un enseignant</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddTeacher} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Prénom"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Nom"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg col-span-2"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Département"
+                  value={formData.department}
+                  onChange={(e) => setFormData({...formData, department: e.target.value})}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg col-span-2"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
+                >
+                  {submitting ? 'Ajout...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="card p-4 bg-red-50 border border-red-200 mb-6">

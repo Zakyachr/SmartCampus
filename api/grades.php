@@ -10,7 +10,7 @@ if ($method === 'GET') {
     // Si étudiant : ne voit que ses notes
     if ($_SESSION['role'] === 'student') {
         $stmt = $pdo->prepare("
-            SELECT g.*, c.title as course_title, c.code as course_code, 
+            SELECT g.*, e.course_id, e.id as enrollment_id, c.title as course_title, c.code as course_code, 
                    u.first_name as teacher_first_name, u.last_name as teacher_last_name
             FROM grades g
             JOIN enrollments e ON g.enrollment_id = e.id
@@ -24,16 +24,16 @@ if ($method === 'GET') {
     // Si enseignant : voit les notes de ses cours
     elseif ($_SESSION['role'] === 'teacher') {
         $teacher_id = $_SESSION['user_id'];
-        
-        // Optionnel: filtrer par course_id si fourni
+        $student_id = filter_var($_GET['student_id'] ?? null, FILTER_VALIDATE_INT);
         $course_id = filter_var($_GET['course_id'] ?? null, FILTER_VALIDATE_INT);
         
         if ($course_id) {
             $stmt = $pdo->prepare("
-                SELECT g.*, e.id as enrollment_id, u.first_name, u.last_name, s.student_number,
+                SELECT e.id as enrollment_id, g.cc1, g.cc2, g.final_exam, g.final_grade, 
+                       u.first_name, u.last_name, s.student_number,
                        c.title as course_title, c.code as course_code
-                FROM grades g
-                JOIN enrollments e ON g.enrollment_id = e.id
+                FROM enrollments e
+                LEFT JOIN grades g ON g.enrollment_id = e.id
                 JOIN users u ON e.student_id = u.id
                 JOIN students s ON u.id = s.id
                 JOIN courses c ON e.course_id = c.id
@@ -43,10 +43,11 @@ if ($method === 'GET') {
             $stmt->execute([$teacher_id, $course_id]);
         } else {
             $stmt = $pdo->prepare("
-                SELECT g.*, e.id as enrollment_id, u.first_name, u.last_name, s.student_number,
+                SELECT e.id as enrollment_id, g.cc1, g.cc2, g.final_exam, g.final_grade, 
+                       u.first_name, u.last_name, s.student_number,
                        c.title as course_title, c.code as course_code
-                FROM grades g
-                JOIN enrollments e ON g.enrollment_id = e.id
+                FROM enrollments e
+                LEFT JOIN grades g ON g.enrollment_id = e.id
                 JOIN users u ON e.student_id = u.id
                 JOIN students s ON u.id = s.id
                 JOIN courses c ON e.course_id = c.id
@@ -59,17 +60,36 @@ if ($method === 'GET') {
     }
     // Si admin : voit toutes les notes
     elseif ($_SESSION['role'] === 'admin') {
-        $stmt = $pdo->query("
-            SELECT g.*, e.id as enrollment_id, u.first_name, u.last_name, s.student_number,
-                   c.title as course_title, prof.first_name as teacher_first_name, prof.last_name as teacher_last_name
-            FROM grades g
-            JOIN enrollments e ON g.enrollment_id = e.id
-            JOIN users u ON e.student_id = u.id
-            JOIN students s ON u.id = s.id
-            JOIN courses c ON e.course_id = c.id
-            LEFT JOIN users prof ON c.teacher_id = prof.id
-            ORDER BY c.title, u.last_name, u.first_name
-        ");
+        $student_id = filter_var($_GET['student_id'] ?? null, FILTER_VALIDATE_INT);
+        
+        if ($student_id) {
+            $stmt = $pdo->prepare("
+                SELECT g.*, e.id as enrollment_id, u.first_name, u.last_name, s.student_number,
+                       c.title as course_title, c.code as course_code,
+                       prof.first_name as teacher_first_name, prof.last_name as teacher_last_name
+                FROM grades g
+                JOIN enrollments e ON g.enrollment_id = e.id
+                JOIN users u ON e.student_id = u.id
+                JOIN students s ON u.id = s.id
+                JOIN courses c ON e.course_id = c.id
+                LEFT JOIN users prof ON c.teacher_id = prof.id
+                WHERE u.id = ?
+                ORDER BY c.title
+            ");
+            $stmt->execute([$student_id]);
+        } else {
+            $stmt = $pdo->query("
+                SELECT g.*, e.id as enrollment_id, u.first_name, u.last_name, s.student_number,
+                       c.title as course_title, prof.first_name as teacher_first_name, prof.last_name as teacher_last_name
+                FROM grades g
+                JOIN enrollments e ON g.enrollment_id = e.id
+                JOIN users u ON e.student_id = u.id
+                JOIN students s ON u.id = s.id
+                JOIN courses c ON e.course_id = c.id
+                LEFT JOIN users prof ON c.teacher_id = prof.id
+                ORDER BY c.title, u.last_name, u.first_name
+            ");
+        }
         jsonResponse($stmt->fetchAll());
     }
 } 
@@ -126,17 +146,44 @@ elseif ($method === 'PUT') {
         exit();
     }
 
-    // Mise à jour de la note (Utilisation de INSERT ... ON DUPLICATE KEY UPDATE)
-    $stmt = $pdo->prepare("
-        INSERT INTO grades (enrollment_id, cc1, cc2, final_exam, final_grade) 
-        VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-        cc1 = VALUES(cc1), cc2 = VALUES(cc2), final_exam = VALUES(final_exam), final_grade = VALUES(final_grade)
+    // Récupérer le nom et prénom de l'étudiant
+    $stmtStudent = $pdo->prepare("
+        SELECT u.first_name, u.last_name 
+        FROM enrollments e
+        JOIN users u ON e.student_id = u.id
+        WHERE e.id = ?
     ");
+    $stmtStudent->execute([$enrollment_id]);
+    $student = $stmtStudent->fetch();
+    $first_name = $student['first_name'] ?? null;
+    $last_name = $student['last_name'] ?? null;
+
+    // Mise à jour de la note
+    // D'abord, vérifier si une note existe déjà
+    $stmtCheck = $pdo->prepare("SELECT id FROM grades WHERE enrollment_id = ?");
+    $stmtCheck->execute([$enrollment_id]);
+    $gradeId = $stmtCheck->fetchColumn();
+
+    if ($gradeId) {
+        // Mettre à jour la note existante
+        $stmt = $pdo->prepare("
+            UPDATE grades 
+            SET cc1 = ?, cc2 = ?, final_exam = ?, final_grade = ?, first_name = ?, last_name = ?
+            WHERE enrollment_id = ?
+        ");
+        $success = $stmt->execute([$cc1, $cc2, $final_exam, $final_grade, $first_name, $last_name, $enrollment_id]);
+    } else {
+        // Créer une nouvelle note
+        $stmt = $pdo->prepare("
+            INSERT INTO grades (enrollment_id, cc1, cc2, final_exam, final_grade, first_name, last_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $success = $stmt->execute([$enrollment_id, $cc1, $cc2, $final_exam, $final_grade, $first_name, $last_name]);
+    }
     
-    if ($stmt->execute([$enrollment_id, $cc1, $cc2, $final_exam, $final_grade])) {
+    if ($success) {
         jsonResponse([
-            "message" => "Notes mises à jour", 
+            "message" => "Notes mises à jour avec succès", 
             "final_grade" => $final_grade ? round($final_grade, 2) : null
         ]);
     } else {
