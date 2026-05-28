@@ -14,11 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Configuration BDD - SQLite (fichier partageable via Git)
-// Avantage : quand un admin ajoute un élève, il suffit de commit+push le fichier database.sqlite
-// et les collaborateurs le reçoivent avec git pull !
-$dbFile = __DIR__ . '/database.sqlite';
-$dsn = "sqlite:" . $dbFile;
+// Configuration BDD - MySQL/MariaDB (MAMP)
+$dbHost = 'localhost';
+$dbPort = 3306;
+$dbName = 'smartcampus_db';
+$dbUser = 'root';
+$dbPass = 'root';
+
+$dsn = "mysql:host=$dbHost;port=$dbPort;dbname=$dbName;charset=utf8mb4";
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Affiche les erreurs SQL proprement
@@ -27,10 +30,7 @@ $options = [
 ];
 
 try {
-    $pdo = new PDO($dsn, null, null, $options);
-    
-    // Activer les clés étrangères pour SQLite
-    $pdo->exec("PRAGMA foreign_keys = ON;");
+    $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
     
 } catch (\PDOException $e) {
     // Si la connexion échoue

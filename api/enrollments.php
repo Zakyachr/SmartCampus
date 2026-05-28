@@ -137,7 +137,7 @@ elseif ($method === 'POST') {
     }
 }
 elseif ($method === 'DELETE') {
-    requireRole(['student', 'admin']);
+    requireRole(['student', 'admin', 'teacher']);
     
     $course_id = filter_var($_GET['course_id'] ?? null, FILTER_VALIDATE_INT);
     $student_id = ($_SESSION['role'] === 'student') ? $_SESSION['user_id'] : filter_var($_GET['student_id'] ?? null, FILTER_VALIDATE_INT);
@@ -146,6 +146,17 @@ elseif ($method === 'DELETE') {
         http_response_code(400);
         echo json_encode(["error" => "ID étudiant ou cours manquant."]);
         exit();
+    }
+
+    // Vérification de sécurité pour les profs : vérifier que c'est bien LEUR cours
+    if ($_SESSION['role'] === 'teacher') {
+        $stmtTeacherCheck = $pdo->prepare("SELECT id FROM courses WHERE id = ? AND teacher_id = ?");
+        $stmtTeacherCheck->execute([$course_id, $_SESSION['user_id']]);
+        if (!$stmtTeacherCheck->fetch()) {
+            http_response_code(403);
+            echo json_encode(["error" => "Vous n'êtes pas autorisé à supprimer des inscriptions pour ce cours."]);
+            exit();
+        }
     }
 
     // Vérifier que le cours n'est pas "validé"
