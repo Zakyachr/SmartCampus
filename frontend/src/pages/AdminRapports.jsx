@@ -2,20 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, Award, BarChart3, Filter } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
+// Page de rapports académiques : classement et statistiques des étudiants par moyenne générale
 const AdminRapports = () => {
+  // État : liste des étudiants avec moyennes calculées, niveaux disponibles, filtrage
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [levels, setLevels] = useState([]);
 
+  // Charge les étudiants et calcule les moyennes au montage
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Récupérer tous les étudiants avec leurs notes
+        // Récupère les étudiants et leurs notes
         const studentsRes = await apiClient.get('/students.php');
         const gradesRes = await apiClient.get('/grades.php');
 
-        // Récupérer aussi les notes pour les admins
+        // Essai de récupération supplémentaire (fallback)
         let allGrades = [];
         try {
           const adminGradesRes = await apiClient.get('/grades.php');
@@ -24,13 +27,14 @@ const AdminRapports = () => {
           console.log('Impossible de récupérer toutes les notes');
         }
 
-        // Calculer les moyennes par étudiant
-        const studentMap = {};
+        // Calcule la moyenne générale pour chaque étudiant
+        const studentMap = {}
         studentsRes.data.forEach(student => {
           const studentGrades = gradesRes.data.filter(g => 
             g.first_name === student.first_name && g.last_name === student.last_name
           );
           
+          // Filtre les notes valides et calcule la moyenne
           const validGrades = studentGrades.filter(g => g.final_grade && !isNaN(g.final_grade));
           const average = validGrades.length > 0
             ? (validGrades.reduce((sum, g) => sum + parseFloat(g.final_grade), 0) / validGrades.length).toFixed(2)
@@ -46,7 +50,7 @@ const AdminRapports = () => {
         const studentsWithAverage = Object.values(studentMap);
         setStudents(studentsWithAverage);
 
-        // Extraire les niveaux uniques
+        // Extrait les niveaux uniques pour le filtre
         const uniqueLevels = [...new Set(studentsWithAverage.map(s => s.level))];
         setLevels(uniqueLevels);
       } catch (error) {
@@ -59,19 +63,19 @@ const AdminRapports = () => {
     fetchData();
   }, []);
 
-  // Filtrer par niveau
+  // Applique le filtre par niveau sélectionné
   const filteredStudents = selectedLevel === 'all' 
     ? students 
     : students.filter(s => s.level === selectedLevel);
 
-  // Trier par moyenne (décroissant)
+  // Trie les étudiants par moyenne (décroissant, les meilleurs en premier)
   const sortedStudents = [...filteredStudents].sort((a, b) => {
     const aAvg = a.average === '-' ? -1 : parseFloat(a.average);
     const bAvg = b.average === '-' ? -1 : parseFloat(b.average);
     return bAvg - aAvg;
   });
 
-  // Statistiques globales
+  // Calcule les statistiques globales affichées en haut
   const totalStudents = students.length;
   const averageOfAverages = students.length > 0
     ? (students.reduce((sum, s) => {
@@ -94,7 +98,7 @@ const AdminRapports = () => {
         <p className="text-[var(--color-text-muted)]">Classement des étudiants par moyenne générale</p>
       </div>
 
-      {/* Statistiques globales */}
+      {/* Cartes de statistiques globales */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="card p-4 flex items-center gap-4">
           <div className="rounded-md bg-blue-50 p-3"><BarChart3 className="w-6 h-6 text-blue-600"/></div>
@@ -126,7 +130,7 @@ const AdminRapports = () => {
         </div>
       </div>
 
-      {/* Filtre par niveau */}
+      {/* Sélecteur de filtrage par niveau */}
       <div className="mb-6 flex items-center gap-4">
         <label className="text-[var(--color-text)] font-semibold">Filtrer par niveau:</label>
         <select 
@@ -141,7 +145,7 @@ const AdminRapports = () => {
         </select>
       </div>
 
-      {/* Tableau de classement */}
+      {/* Tableau principal : classement des étudiants */}
       <div className="card overflow-hidden">
         <table className="w-full">
           <thead>
@@ -160,6 +164,7 @@ const AdminRapports = () => {
               sortedStudents.map((student, index) => (
                 <tr key={student.id} className="border-b hover:bg-gray-50 transition">
                   <td className="px-6 py-3">
+                    {/* Affiche les médailles pour le top 3 */}
                     <div className="flex items-center gap-2">
                       {index === 0 && <span className="text-2xl">🥇</span>}
                       {index === 1 && <span className="text-2xl">🥈</span>}
@@ -204,13 +209,14 @@ const AdminRapports = () => {
         </table>
       </div>
 
-      {/* Classement par niveau */}
+      {/* Section : récapitulatif par niveau (seulement en vue d'ensemble) */}
       {levels.length > 0 && selectedLevel === 'all' && (
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-6">Récapitulatif par niveau</h2>
           <div className="grid grid-cols-1 gap-6">
             {levels.map(level => {
               const levelStudents = students.filter(s => s.level === level);
+              // Calcule la moyenne du niveau
               const levelAverage = levelStudents.length > 0
                 ? (levelStudents.reduce((sum, s) => {
                     const avg = s.average === '-' ? 0 : parseFloat(s.average);
@@ -218,6 +224,7 @@ const AdminRapports = () => {
                   }, 0) / levelStudents.length).toFixed(2)
                 : 0;
               
+              // Identifie le meilleur étudiant du niveau
               const topInLevel = [...levelStudents].sort((a, b) => {
                 const aAvg = a.average === '-' ? -1 : parseFloat(a.average);
                 const bAvg = b.average === '-' ? -1 : parseFloat(b.average);

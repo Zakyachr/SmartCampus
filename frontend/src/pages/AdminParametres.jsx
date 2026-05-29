@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Building2, GraduationCap, Shield, Bell, Save, RotateCcw, CheckCircle } from 'lucide-react';
 
+// Paramètres par défaut du système (campus, académique, système, notifications)
 const defaultSettings = {
   campus: {
     name: 'SmartCampus',
@@ -37,13 +38,15 @@ const defaultSettings = {
   }
 };
 
+// Page d'administration : configuration centralisée de tous les paramètres système
 const AdminParametres = () => {
+  // État : paramètres actuels, feedback sauvegarde, section active
   const [settings, setSettings] = useState(defaultSettings);
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState('campus');
 
+  // Charge les paramètres depuis localStorage au montage
   useEffect(() => {
-    // Charger depuis localStorage
     const stored = localStorage.getItem('smartcampus_settings');
     if (stored) {
       try {
@@ -54,12 +57,14 @@ const AdminParametres = () => {
     }
   }, []);
 
+  // Enregistre les paramètres en localStorage avec feedback utilisateur
   const handleSave = () => {
     localStorage.setItem('smartcampus_settings', JSON.stringify(settings));
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
+  // Réinitialise tous les paramètres aux valeurs par défaut
   const handleReset = () => {
     if (window.confirm('Réinitialiser tous les paramètres par défaut ?')) {
       setSettings(defaultSettings);
@@ -67,6 +72,7 @@ const AdminParametres = () => {
     }
   };
 
+  // Met à jour un paramètre spécifique dans sa section
   const updateSetting = (section, key, value) => {
     setSettings(prev => ({
       ...prev,
@@ -74,6 +80,7 @@ const AdminParametres = () => {
     }));
   };
 
+  // Sections de configuration (navigation latérale)
   const sections = [
     { id: 'campus', label: 'Campus', icon: Building2 },
     { id: 'academic', label: 'Académique', icon: GraduationCap },
@@ -81,6 +88,7 @@ const AdminParametres = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
+  // Composant réutilisable : champ de saisie texte/nombre avec label et indice
   const InputField = ({ label, value, onChange, type = 'text', hint, suffix }) => (
     <div>
       <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">{label}</label>
@@ -97,6 +105,7 @@ const AdminParametres = () => {
     </div>
   );
 
+  // Composant réutilisable : bouton de basculement on/off avec label
   const ToggleField = ({ label, value, onChange, hint }) => (
     <div className="flex items-center justify-between py-3">
       <div>
@@ -144,7 +153,7 @@ const AdminParametres = () => {
       </div>
 
       <div className="flex gap-6">
-        {/* Sidebar navigation */}
+      {/* Navigation : sélection des sections */}
         <div className="w-56 flex-shrink-0">
           <nav className="space-y-1">
             {sections.map((section) => (
@@ -164,9 +173,9 @@ const AdminParametres = () => {
           </nav>
         </div>
 
-        {/* Settings content */}
+        {/* Contenu : formulaires de chaque section */}
         <div className="flex-1">
-          {/* Campus settings */}
+          {/* Section 1 : Informations du campus */}
           {activeSection === 'campus' && (
             <div className="card p-6 card-glow">
               <div className="flex items-center gap-3 mb-6">
@@ -188,7 +197,7 @@ const AdminParametres = () => {
             </div>
           )}
 
-          {/* Academic settings */}
+          {/* Section 2 : Paramètres académiques (seuils, pondérations) */}
           {activeSection === 'academic' && (
             <div className="card p-6 card-glow">
               <div className="flex items-center gap-3 mb-6">
@@ -200,7 +209,7 @@ const AdminParametres = () => {
                   <p className="text-sm text-[var(--color-text-muted)]">Seuils de notes, pondérations et limites</p>
                 </div>
               </div>
-              
+              {/* Définition des notes seuils pour les mentions */}
               <h3 className="font-semibold text-sm text-[var(--color-text-muted)] uppercase tracking-wide mb-3">Seuils de Mention</h3>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <InputField label="Seuil de passage" value={settings.academic.pass_threshold} onChange={(v) => updateSetting('academic', 'pass_threshold', v)} type="number" suffix="/20" hint="Note minimum pour valider un cours" />
@@ -209,6 +218,7 @@ const AdminParametres = () => {
                 <InputField label="Mention Très Bien" value={settings.academic.mention_tb} onChange={(v) => updateSetting('academic', 'mention_tb', v)} type="number" suffix="/20" />
               </div>
 
+              {/* Pondérations avec validation de la somme = 100% */}
               <div className="border-t border-[var(--color-border)] pt-6 mb-6">
                 <h3 className="font-semibold text-sm text-[var(--color-text-muted)] uppercase tracking-wide mb-3">Pondérations</h3>
                 <div className="grid grid-cols-3 gap-4">
@@ -222,7 +232,7 @@ const AdminParametres = () => {
               </div>
 
               <div className="border-t border-[var(--color-border)] pt-6">
-                <h3 className="font-semibold text-sm text-[var(--color-text-muted)] uppercase tracking-wide mb-3">Limites</h3>
+                <h3 className="font-semibold text-sm text-[var(--color-text-muted)] uppercase tracking-wide mb-3">Limites d'inscription</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <InputField label="Max cours par étudiant" value={settings.academic.max_courses_per_student} onChange={(v) => updateSetting('academic', 'max_courses_per_student', v)} type="number" />
                   <InputField label="Année académique" value={settings.academic.academic_year} onChange={(v) => updateSetting('academic', 'academic_year', v)} />
@@ -231,7 +241,7 @@ const AdminParametres = () => {
             </div>
           )}
 
-          {/* System settings */}
+          {/* Section 3 : Paramètres système (maintenance, timeouts) */}
           {activeSection === 'system' && (
             <div className="card p-6 card-glow">
               <div className="flex items-center gap-3 mb-6">
@@ -244,6 +254,7 @@ const AdminParametres = () => {
                 </div>
               </div>
               
+              {/* Toggles pour les modes système */}
               <div className="space-y-1 mb-6">
                 <ToggleField 
                   label="Mode maintenance" 
@@ -265,6 +276,8 @@ const AdminParametres = () => {
                 />
               </div>
 
+              {/* Configuration des valeurs par défaut */}
+              {/* Configuration des valeurs par défaut */}
               <div className="border-t border-[var(--color-border)] pt-6">
                 <div className="grid grid-cols-2 gap-4">
                   <InputField label="Capacité par défaut des cours" value={settings.system.default_course_capacity} onChange={(v) => updateSetting('system', 'default_course_capacity', v)} type="number" hint="Nombre de places par défaut lors de la création d'un cours" />
@@ -275,7 +288,7 @@ const AdminParametres = () => {
             </div>
           )}
 
-          {/* Notifications settings */}
+          {/* Section 4 : Configuration des notifications */}
           {activeSection === 'notifications' && (
             <div className="card p-6 card-glow">
               <div className="flex items-center gap-3 mb-6">
@@ -288,6 +301,7 @@ const AdminParametres = () => {
                 </div>
               </div>
               
+              {/* Toggles pour les alertes et notifications */}
               <div className="space-y-1 mb-6">
                 <ToggleField 
                   label="Notifications par email" 
