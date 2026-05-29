@@ -23,7 +23,7 @@ import TeacherGradeEntry from './pages/TeacherGradeEntry';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminSeed from './pages/AdminSeed';
 
-// Pages Student
+// Pages Etudiant
 // StudentDashboard imported from pages/StudentDashboard
 
 const AppLayout = ({ children }) => (
