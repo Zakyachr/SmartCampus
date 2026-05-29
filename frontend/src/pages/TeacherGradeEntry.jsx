@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../api/apiClient';
-import { BookOpen, Save, AlertCircle } from 'lucide-react';
+import { BookOpen, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 
 const TeacherGradeEntry = () => {
   const { user } = useContext(AuthContext);
@@ -98,6 +98,25 @@ const TeacherGradeEntry = () => {
     }
   };
 
+  const handleValidateCourse = async () => {
+    if (!window.confirm("Êtes-vous sûr de vouloir valider ces notes définitivement ? Cette action est irréversible et vous ne pourrez plus modifier les notes de ce cours.")) {
+      return;
+    }
+
+    try {
+      setSaving('validate');
+      await apiClient.patch(`/courses.php?id=${selectedCourse}`, { action: 'validate' });
+      setSuccess('Le cours a été validé. Les notes sont verrouillées.');
+      
+      // Mettre à jour l'état local du cours
+      setCourses(courses.map(c => c.id === selectedCourse ? { ...c, status: 'validé' } : c));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erreur lors de la validation du cours');
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const calculateFinal = (enrollmentId) => {
     const g = grades[enrollmentId];
     if (!g || !g.cc1 || !g.cc2 || !g.final_exam) return '-';
@@ -161,13 +180,30 @@ const TeacherGradeEntry = () => {
       {/* Tableau de saisie des notes */}
       {enrollments.length > 0 ? (
         <div className="card overflow-hidden">
-          <div className="p-6 border-b border-[var(--color-border)] bg-[#F9FAFB]">
-            <h2 className="font-bold text-lg">
-              {selectedCourseData?.title} ({enrollments.length} élève{enrollments.length > 1 ? 's' : ''})
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] mt-1">
-              Pondération : CC1 (30%) + CC2 (30%) + Examen (40%)
-            </p>
+          <div className="p-6 border-b border-[var(--color-border)] bg-[#F9FAFB] flex justify-between items-center">
+            <div>
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                {selectedCourseData?.title} ({enrollments.length} élève{enrollments.length > 1 ? 's' : ''})
+                {selectedCourseData?.status === 'validé' && (
+                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> Validé
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                Pondération : CC1 (30%) + CC2 (30%) + Examen (40%)
+              </p>
+            </div>
+            {selectedCourseData?.status !== 'validé' && enrollments.length > 0 && (
+              <button
+                onClick={handleValidateCourse}
+                disabled={saving === 'validate'}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 transition-colors shadow-sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {saving === 'validate' ? 'Validation...' : 'Valider définitivement'}
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -198,7 +234,8 @@ const TeacherGradeEntry = () => {
                         value={grades[enrollment.enrollment_id]?.cc1 || ''}
                         onChange={(e) => handleGradeChange(enrollment.enrollment_id, 'cc1', e.target.value)}
                         placeholder="-"
-                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center"
+                        disabled={selectedCourseData?.status === 'validé'}
+                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center disabled:bg-gray-100"
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -210,7 +247,8 @@ const TeacherGradeEntry = () => {
                         value={grades[enrollment.enrollment_id]?.cc2 || ''}
                         onChange={(e) => handleGradeChange(enrollment.enrollment_id, 'cc2', e.target.value)}
                         placeholder="-"
-                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center"
+                        disabled={selectedCourseData?.status === 'validé'}
+                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center disabled:bg-gray-100"
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -222,7 +260,8 @@ const TeacherGradeEntry = () => {
                         value={grades[enrollment.enrollment_id]?.final_exam || ''}
                         onChange={(e) => handleGradeChange(enrollment.enrollment_id, 'final_exam', e.target.value)}
                         placeholder="-"
-                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center"
+                        disabled={selectedCourseData?.status === 'validé'}
+                        className="w-16 px-2 py-1 border border-[var(--color-border)] rounded text-center disabled:bg-gray-100"
                       />
                     </td>
                     <td className="px-6 py-4 text-center font-bold">
@@ -231,7 +270,7 @@ const TeacherGradeEntry = () => {
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleSaveGrade(enrollment.enrollment_id)}
-                        disabled={saving === enrollment.enrollment_id}
+                        disabled={saving === enrollment.enrollment_id || selectedCourseData?.status === 'validé'}
                         className="px-3 py-1 bg-[var(--color-primary)] text-white rounded text-sm font-semibold hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-1 mx-auto"
                       >
                         <Save className="w-4 h-4" />

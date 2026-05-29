@@ -102,4 +102,90 @@ elseif ($method === 'POST') {
         }
     }
 }
+elseif ($method === 'DELETE') {
+    requireRole(['admin']);
+    
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID étudiant manquant ou invalide."]);
+        exit();
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Supprimer les notes liées aux inscriptions de cet étudiant
+        $pdo->prepare("DELETE FROM grades WHERE enrollment_id IN (SELECT id FROM enrollments WHERE student_id = ?)")->execute([$id]);
+
+        // 2. Supprimer les inscriptions
+        $pdo->prepare("DELETE FROM enrollments WHERE student_id = ?")->execute([$id]);
+
+        // 3. Supprimer l'entrée dans students
+        $pdo->prepare("DELETE FROM students WHERE id = ?")->execute([$id]);
+
+        // 4. Supprimer l'utilisateur
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND role = 'student'");
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            http_response_code(404);
+            echo json_encode(["error" => "Étudiant introuvable."]);
+            exit();
+        }
+
+        $pdo->commit();
+        jsonResponse(["message" => "Étudiant supprimé avec succès."]);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(["error" => "Erreur lors de la suppression de l'étudiant."]);
+    }
+}
+elseif ($method === 'PUT') {
+    requireRole(['admin']);
+    
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    $data = json_decode(file_get_contents("php://input"), true);
+    
+    $email = filter_var($data['email'] ?? '', FILTER_SANITIZE_EMAIL);
+    $firstName = filter_var($data['first_name'] ?? '', FILTER_SANITIZE_STRING);
+    $lastName = filter_var($data['last_name'] ?? '', FILTER_SANITIZE_STRING);
+    $studentNumber = filter_var($data['student_number'] ?? '', FILTER_SANITIZE_STRING);
+    $major = filter_var($data['major'] ?? '', FILTER_SANITIZE_STRING);
+    $level = filter_var($data['level'] ?? '', FILTER_SANITIZE_STRING);
+    $dateOfBirth = filter_var($data['date_of_birth'] ?? '', FILTER_SANITIZE_STRING);
+    
+    if (!$id || empty($email) || empty($firstName) || empty($lastName) || empty($studentNumber)) {
+        http_response_code(400);
+        echo json_encode(["error" => "Données invalides ou incomplètes."]);
+        exit();
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmtUser = $pdo->prepare("UPDATE users SET email = ?, first_name = ?, last_name = ? WHERE id = ? AND role = 'student'");
+        $stmtUser->execute([$email, $firstName, $lastName, $id]);
+
+        $stmtStudent = $pdo->prepare("UPDATE students SET student_number = ?, major = ?, level = ?, date_of_birth = ? WHERE id = ?");
+        $stmtStudent->execute([$studentNumber, $major, $level, $dateOfBirth ?: null, $id]);
+
+        $pdo->commit();
+        jsonResponse(["message" => "Étudiant modifié avec succès."]);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        if ($e->getCode() == 23000) {
+            http_response_code(400);
+            echo json_encode(["error" => "L'email ou le numéro étudiant existe déjà."]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "Erreur lors de la modification de l'étudiant."]);
+        }
+    }
+}
 ?>

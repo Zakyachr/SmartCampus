@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { BookOpen, Trophy, Users, TrendingUp, Award, BarChart3, GraduationCap } from 'lucide-react';
 
@@ -50,7 +51,11 @@ const MesCours = () => {
         } else {
           // Pour les autres rôles, garder l'ancien comportement
           const response = await apiClient.get('/courses.php');
-          setCourses(response.data);
+          if (user?.role === 'teacher') {
+            setCourses(response.data.filter(c => c.teacher_id === user.id));
+          } else {
+            setCourses(response.data);
+          }
         }
       } catch (err) {
         console.error('Erreur API:', err);
@@ -85,7 +90,7 @@ const MesCours = () => {
   }
 
   // Sinon, vue par défaut (enseignant/admin)
-  return <DefaultCoursesView courses={courses} />;
+  return <DefaultCoursesView courses={courses} user={user} />;
 };
 
 // ====== VUE ÉTUDIANT ENRICHIE ======
@@ -313,7 +318,17 @@ const StudentCoursesView = ({ courses }) => {
 };
 
 // ====== VUE PAR DÉFAUT (ENSEIGNANT/ADMIN) ======
-const DefaultCoursesView = ({ courses }) => {
+const DefaultCoursesView = ({ courses, user }) => {
+  const navigate = useNavigate();
+
+  const handleDetails = (course) => {
+    if (user?.role === 'teacher') {
+      navigate('/teacher/eleves', { state: { courseId: course.id } });
+    } else if (user?.role === 'admin') {
+      navigate('/admin/cours');
+    }
+  };
+
   const icons = [
     { bg: '#DBEAFE', icon: '⚡' },
     { bg: '#DCFCE7', icon: '📐' },
@@ -341,7 +356,12 @@ const DefaultCoursesView = ({ courses }) => {
             </div>
             <div className="mt-4 flex items-center justify-between pt-4 border-t border-[var(--color-border)]">
               <span className="badge-active">Actif</span>
-              <button className="text-[var(--color-primary)]">Détails →</button>
+              <button 
+                onClick={() => handleDetails(course)}
+                className="text-[var(--color-primary)] hover:underline"
+              >
+                Détails →
+              </button>
             </div>
           </div>
         ))}

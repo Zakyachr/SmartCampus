@@ -14,13 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Configuration BDD - C'est maintenant une base de données sous forme de fichier
-// Cela permet de n'avoir qu'un fichier "database.sqlite" qui se mettra à jour automatiquement !
-// Plus besoin de configurer MySQL ou de lancer le serveur MySQL de MAMP
+// Configuration BDD - MySQL/MariaDB (MAMP)
+$dbHost = 'localhost';
+$dbPort = 3306;
+$dbName = 'smartcampus_db';
+$dbUser = 'root';
+$dbPass = 'root';
 
-$dbFile = __DIR__ . '/database.sqlite';
-// Le DSN (Data Source Name) utilise le driver SQLite
-$dsn = "sqlite:" . $dbFile;
+$dsn = "mysql:host=$dbHost;port=$dbPort;dbname=$dbName;charset=utf8mb4";
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Affiche les erreurs SQL proprement
@@ -29,16 +30,12 @@ $options = [
 ];
 
 try {
-    // Tentative de connexion (Puisque c'est SQLite, le fichier sera accédé directement via PHP)
-    $pdo = new PDO($dsn, null, null, $options);
-    
-    // Activer les clés étrangères pour SQLite
-    $pdo->exec("PRAGMA foreign_keys = ON;");
+    $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
     
 } catch (\PDOException $e) {
     // Si la connexion échoue
     http_response_code(500);
-    echo json_encode(["error" => "Erreur de connexion à la base de données SQLite : " . $e->getMessage()]);
+    echo json_encode(["error" => "Erreur de connexion à la base de données : " . $e->getMessage()]);
     exit();
 }
 ?>
