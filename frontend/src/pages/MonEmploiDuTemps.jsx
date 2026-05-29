@@ -34,46 +34,70 @@ const MonEmploiDuTemps = () => {
     groupedByDay[day] = schedules.filter(s => s.day_of_week === day);
   });
 
+  // Heures d'affichage typiques pour une école, par ex. 08:00 à 18:00
+  const timeSlots = [...Array(11)].map((_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Mon Emploi du temps</h1>
-      <div className="space-y-6">
-        {days.map(day => (
-          <div key={day} className="card">
-            <div className="px-6 py-4 bg-[#F9FAFB] border-b border-[var(--color-border)]">
-              <h3 className="font-semibold text-lg">{day}</h3>
-            </div>
-            <div className="divide-y">
-              {groupedByDay[day] && groupedByDay[day].length > 0 ? (
-                groupedByDay[day].map((schedule) => (
-                  <div key={schedule.id} className="p-6 hover:bg-[#F9FAFB]">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: dayColors[day] }}>
-                        <Clock className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg">{schedule.course_title}</h4>
-                        <div className="text-sm text-[var(--color-text-muted)] mt-1">{schedule.code}</div>
-                        <div className="flex gap-6 mt-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[var(--color-primary)]" />
-                            {schedule.start_time} - {schedule.end_time}
+      <div className="card shadow-sm border border-[var(--color-border)] overflow-x-auto">
+        <table className="w-full min-w-[700px] border-collapse bg-white">
+          <thead>
+            <tr>
+              <th className="w-20 p-4 border-b border-r bg-gray-50 text-gray-500 font-medium text-sm">
+                Heure
+              </th>
+              {days.map(day => (
+                <th key={day} className="p-4 border-b bg-gray-50 text-gray-700 font-semibold flex-1 min-w-[150px] text-center">
+                  {day}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {timeSlots.map(time => (
+              <tr key={time} className="group">
+                <td className="p-3 border-b border-r bg-gray-50 text-xs text-gray-500 text-center font-medium">
+                  {time}
+                </td>
+                {days.map(day => {
+                  const daySchedules = groupedByDay[day] || [];
+                  const slotHour = parseInt(time.split(':')[0], 10);
+                  const activeSchedule = daySchedules.find(s => {
+                    const sHour = parseInt(s.start_time.split(':')[0], 10);
+                    return sHour === slotHour;
+                  });
+
+                  return (
+                    <td key={day + time} className="p-2 border-b h-20 align-top relative">
+                      {activeSchedule && (
+                        <div 
+                          className="absolute inset-2 p-2 rounded-lg flex flex-col justify-center text-xs overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          style={{ 
+                            backgroundColor: dayColors[day] || '#f0f9ff',
+                            borderLeft: `3px solid var(--color-primary)`
+                          }}
+                        >
+                          <div className="font-semibold text-gray-800 truncate mb-1">
+                            {activeSchedule.course_title}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[var(--color-primary)]" />
-                            {schedule.room}
+                          <div className="flex items-center gap-1 text-gray-600 mb-1">
+                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            <span>{activeSchedule.start_time.substring(0,5)} - {activeSchedule.end_time.substring(0,5)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-600">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{activeSchedule.room}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-6 text-[var(--color-text-muted)]">Pas de cours ce jour</div>
-              )}
-            </div>
-          </div>
-        ))}
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
