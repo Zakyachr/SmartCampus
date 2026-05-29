@@ -69,25 +69,25 @@ const MonEmploiDuTemps = () => {
                   });
 
                   return (
-                    <td key={day + time} className="p-2 border-b h-20 align-top relative">
+                    <td key={day + time} className="p-1 border-b h-28 align-top relative">
                       {activeSchedule && (
                         <div 
-                          className="absolute inset-2 p-2 rounded-lg flex flex-col justify-center text-xs overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          className="absolute inset-1 p-2 rounded-lg flex flex-col justify-start text-xs overflow-y-auto shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                           style={{ 
                             backgroundColor: dayColors[day] || '#f0f9ff',
-                            borderLeft: `3px solid var(--color-primary)`
+                            borderLeft: `4px solid var(--color-primary)`
                           }}
                         >
-                          <div className="font-semibold text-gray-800 truncate mb-1">
+                          <div className="font-semibold text-gray-800 leading-snug mb-1.5">
                             {activeSchedule.course_title}
                           </div>
-                          <div className="flex items-center gap-1 text-gray-600 mb-1">
+                          <div className="flex items-center gap-1.5 text-gray-600 mb-1">
                             <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span>{activeSchedule.start_time.substring(0,5)} - {activeSchedule.end_time.substring(0,5)}</span>
+                            <span className="whitespace-nowrap">{activeSchedule.start_time.substring(0,5)} - {activeSchedule.end_time.substring(0,5)}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-gray-600">
+                          <div className="flex items-center gap-1.5 text-gray-600">
                             <MapPin className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{activeSchedule.room}</span>
+                            <span className="truncate leading-tight">{activeSchedule.room}</span>
                           </div>
                         </div>
                       )}
