@@ -46,6 +46,17 @@ try {
     
     $addedCount = 0;
     
+    // Déterminer le prochain numéro étudiant séquentiel
+    $studentNumbersQuery = $pdo->query("SELECT student_number FROM students WHERE student_number LIKE 'E2026%'");
+    $existingNumbers = $studentNumbersQuery->fetchAll(PDO::FETCH_COLUMN);
+    $maxSuffix = 0;
+    foreach ($existingNumbers as $num) {
+        $suffix = (int)substr($num, 5);
+        if ($suffix > $maxSuffix) {
+            $maxSuffix = $suffix;
+        }
+    }
+    
     // Démarrer une transaction
     $pdo->beginTransaction();
     
@@ -54,8 +65,10 @@ try {
         $fn = $firstNames[array_rand($firstNames)];
         $ln = $lastNames[array_rand($lastNames)];
         
-        // Générer un email unique
-        $emailBase = strtolower(transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $fn . '.' . $ln));
+        // Nettoyer les accents pour l'email
+        $cleanFn = str_replace(['é', 'è', 'à', 'ç', 'ù', 'â', 'ê', 'î', 'ô', 'û', 'ë', 'ï', 'ü', 'ÿ', ' '], ['e', 'e', 'a', 'c', 'u', 'a', 'e', 'i', 'o', 'u', 'e', 'i', 'u', 'y', ''], strtolower($fn));
+        $cleanLn = str_replace(['é', 'è', 'à', 'ç', 'ù', 'â', 'ê', 'î', 'ô', 'û', 'ë', 'ï', 'ü', 'ÿ', ' '], ['e', 'e', 'a', 'c', 'u', 'a', 'e', 'i', 'o', 'u', 'e', 'i', 'u', 'y', ''], strtolower($ln));
+        $emailBase = $cleanFn . '.' . $cleanLn;
         $emailBase = preg_replace('/[^a-z0-9\._-]/', '', $emailBase);
         $email = $emailBase . rand(100, 999) . '@smartcampus.edu';
         
@@ -64,8 +77,9 @@ try {
         $userStmt->execute([$email, $hash, $fn, $ln]);
         $userId = $pdo->lastInsertId();
         
-        // Générer un numéro étudiant unique
-        $studentNumber = 'E2026' . str_pad((string)(20 + $i + rand(10, 90)), 4, '0', STR_PAD_LEFT);
+        // Générer un numéro étudiant unique séquentiel
+        $maxSuffix++;
+        $studentNumber = 'E2026' . str_pad((string)$maxSuffix, 4, '0', STR_PAD_LEFT);
         
         // Paramètres étudiants
         $major = $majors[array_rand($majors)];
