@@ -2,19 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar, Search, Filter } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
+// Composant de gestion complète des cours : CRUD, horaires, visualisation des inscriptions
 const GestionCours = () => {
+  // État principal
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Modals et sélections
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseStudents, setCourseStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
+  // Recherche et filtrage
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('tous');
   const [sortBy, setSortBy] = useState('title_asc');
 
+  // Modals CRUD
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -34,7 +40,6 @@ const GestionCours = () => {
     title: '',
     description: '',
     teacher_id: '',
-    teacher_id: '',
     max_capacity: 30
   });
   const [editFormData, setEditFormData] = useState({
@@ -46,11 +51,13 @@ const GestionCours = () => {
     max_capacity: 30
   });
 
+  // Initialisation : charger les cours et enseignants
   useEffect(() => {
     fetchCourses();
     fetchTeachers();
   }, []);
 
+  // Récupère la liste des enseignants pour les formulaires
   const fetchTeachers = async () => {
     try {
       const response = await apiClient.get('/teachers.php');
@@ -60,6 +67,7 @@ const GestionCours = () => {
     }
   };
 
+  // Crée un nouveau cours
   const handleAddCourse = async (e) => {
     e.preventDefault();
     try {
@@ -81,6 +89,7 @@ const GestionCours = () => {
     }
   };
 
+  // Modifie un cours existant
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -107,6 +116,7 @@ const GestionCours = () => {
     setShowEditModal(true);
   };
 
+  // Récupère tous les cours de la base de données
   const fetchCourses = async () => {
     try {
       setLoading(true);
@@ -121,6 +131,7 @@ const GestionCours = () => {
     }
   };
 
+  // Charge et affiche les étudiants inscrits à un cours
   const handleViewCourse = async (course) => {
     setSelectedCourse(course);
     setShowViewModal(true);
@@ -137,6 +148,7 @@ const GestionCours = () => {
     }
   };
 
+  // Supprime un cours (et ses inscriptions/notes associées)
   const handleDeleteCourse = async (courseId) => {
     try {
       setDeleting(true);
@@ -150,6 +162,7 @@ const GestionCours = () => {
     }
   };
 
+  // Charge et prépare l'édition de l'horaire d'un cours
   const handleViewSchedule = async (course) => {
     setSelectedCourse(course);
     setLoadingStudents(true);
@@ -181,6 +194,7 @@ const GestionCours = () => {
     }
   };
 
+  // Crée ou modifie l'horaire d'un cours
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -215,6 +229,7 @@ const GestionCours = () => {
     }
   };
 
+  // Retourne les couleurs CSS selon le statut du cours
   const getStatusColor = (status) => {
     switch(status) {
       case 'ouvert':
@@ -228,11 +243,10 @@ const GestionCours = () => {
     }
   };
 
+  // Applique filtrage et tri aux cours
   const filteredAndSortedCourses = courses
     .filter(course => {
-      // Filtrage par statut
       if (statusFilter !== 'tous' && course.status !== statusFilter) return false;
-      // Recherche
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const title = (course.title || '').toLowerCase();
@@ -294,7 +308,7 @@ const GestionCours = () => {
         </select>
       </div>
 
-      {/* Modal Ajout Cours */}
+      {/* Modal pour créer un nouveau cours */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
           <div className="card w-full max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -374,7 +388,7 @@ const GestionCours = () => {
         </div>
       )}
 
-      {/* Modal Modification Cours */}
+      {/* Modal pour modifier un cours existant */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
           <div className="card w-full max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -454,7 +468,7 @@ const GestionCours = () => {
         </div>
       )}
 
-      {/* Modal Horaires */}
+      {/* Modal pour gérer les horaires et la salle du cours */}
       {showScheduleModal && selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
           <div className="card w-full max-w-md p-6">
@@ -541,7 +555,7 @@ const GestionCours = () => {
         </div>
       )}
 
-      {/* Modal confirmation suppression */}
+      {/* Modal pour confirmer la suppression d'un cours */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
           <div className="card w-full max-w-md p-6">
@@ -574,7 +588,7 @@ const GestionCours = () => {
         </div>
       )}
 
-      {/* Modal consultation des étudiants du cours */}
+      {/* Modal pour afficher les étudiants inscrits à un cours */}
       {showViewModal && selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-backdrop">
           <div className="card w-full max-w-3xl max-h-[85vh] overflow-y-auto">

@@ -2,25 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Users, BookOpen, GraduationCap, TrendingUp, Award, BarChart2, UserCheck, Clock } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
+// Composant AdminDashboard: Affiche les statistiques et métriques principales de l'établissement
+
 const AdminDashboard = () => {
+  // État pour stocker les données du dashboard
   const [data, setData] = useState(null);
+  // État pour gérer l'état de chargement
   const [loading, setLoading] = useState(true);
 
+  // Hook: Récupère les données du dashboard au montage du composant
   useEffect(() => {
     fetchDashboard();
   }, []);
 
+  // Fonction: Récupère les données du dashboard depuis l'API
   const fetchDashboard = async () => {
     try {
+      // Appel API pour obtenir les statistiques
       const response = await apiClient.get('/dashboard.php');
       setData(response.data);
     } catch (err) {
+      // Gestion des erreurs
       console.error('Erreur dashboard:', err);
     } finally {
+      // Arrêter le chargement dans tous les cas
       setLoading(false);
     }
   };
 
+  // État de chargement: Affiche un spinner
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -32,8 +42,10 @@ const AdminDashboard = () => {
     );
   }
 
+  // Gestion d'erreur: Affiche un message si les données ne peuvent pas être chargées
   if (!data) return <div className="p-8 text-center text-[var(--color-text-muted)]">Erreur de chargement</div>;
 
+  // Données des cartes statistiques principales (étudiants, enseignants, cours, inscriptions)
   const statCards = [
     { label: 'Étudiants', value: data.total_students || 0, icon: Users, color: 'from-purple-500 to-purple-700', bgLight: 'from-purple-50 to-purple-100' },
     { label: 'Enseignants', value: data.total_teachers || 0, icon: GraduationCap, color: 'from-blue-500 to-blue-700', bgLight: 'from-blue-50 to-blue-100' },
@@ -50,7 +62,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Section 1: Cartes de statistiques (4 colonnes en desktop) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, idx) => (
           <div key={idx} className="card p-5 card-glow" style={{ animationDelay: `${idx * 0.1}s` }}>
@@ -65,9 +77,9 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Row 2: Performance + Distribution */}
+      {/* Section 2: Performance académique, distribution par filière et cours populaires */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Performance Metrics */}
+        {/* Sous-section: Affiche la moyenne générale et le taux de réussite */}
         <div className="card p-6 card-glow">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-[var(--color-primary)]" />
@@ -110,7 +122,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Distribution par filière */}
+        {/* Sous-section: Répartition des étudiants par filière et par niveau */}
         <div className="card p-6 card-glow">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-[var(--color-primary)]" />
@@ -142,7 +154,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* Distribution par niveau */}
+          {/* Distribution par niveau académique */}
           <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
             <h3 className="text-sm font-semibold text-[var(--color-text-muted)] mb-3">Par Niveau</h3>
             <div className="flex gap-3">
@@ -156,7 +168,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Top courses */}
+        {/* Sous-section: Liste des 4 cours les plus populaires */}
         <div className="card p-6 card-glow">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-[var(--color-primary)]" />
@@ -189,7 +201,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Recent enrollments */}
+      {/* Section 3: Tableau des dernières inscriptions aux cours */}
       <div className="card p-6 card-glow">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5 text-[var(--color-primary)]" />

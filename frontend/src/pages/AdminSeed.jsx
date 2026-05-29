@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import apiClient from '../api/apiClient';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
+// Page d'admin pour importer des données de test dans la base de données
 const AdminSeed = () => {
+  // État : chargement, messages d'erreur/succès, stats de la DB
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [stats, setStats] = useState(null);
 
+  // Récupère les statistiques actuelles de la base de données
   const fetchStats = async () => {
     try {
       const response = await fetch('http://localhost/smartcampus/api/seed.php');
@@ -20,10 +23,12 @@ const AdminSeed = () => {
     }
   };
 
+  // Charge les stats au montage du composant
   React.useEffect(() => {
     fetchStats();
   }, []);
 
+  // Lance l'importation des données de test
   const handleImport = async () => {
     setLoading(true);
     setError(null);
@@ -41,7 +46,7 @@ const AdminSeed = () => {
       const data = await response.json();
       setSuccess(data.message);
       
-      // Rafraîchir les stats
+      // Rafraîchit les stats après un léger délai
       setTimeout(() => {
         fetchStats();
       }, 500);
@@ -58,6 +63,7 @@ const AdminSeed = () => {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Importer les Données de Test</h1>
 
+        {/* Affiche les statistiques actuelles de la DB */}
         <div className="card p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">État actuel de la base de données</h2>
           {stats ? (
@@ -92,6 +98,7 @@ const AdminSeed = () => {
           )}
         </div>
 
+        {/* Message d'erreur en cas d'import échoué */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -102,6 +109,7 @@ const AdminSeed = () => {
           </div>
         )}
 
+        {/* Message de succès après l'import */}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -112,6 +120,7 @@ const AdminSeed = () => {
           </div>
         )}
 
+        {/* Formulaire et bouton d'import */}
         <div className="card p-6">
           <h3 className="text-lg font-bold mb-4">Données à importer</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
@@ -123,6 +132,7 @@ const AdminSeed = () => {
             <li>✅ Notes pré-saisies</li>
           </ul>
 
+          {/* Bouton pour lancer l'importation */}
           <button
             onClick={handleImport}
             disabled={loading}

@@ -15,6 +15,8 @@ const GestionEtudiants = () => {
   const [studentRank, setStudentRank] = useState(null);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMajor, setSelectedMajor] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -193,15 +195,23 @@ const GestionEtudiants = () => {
     return { text: 'Insuffisant', bg: 'bg-red-100 text-red-700' };
   };
 
-  // Filtrer les étudiants selon la recherche
+  // Extraire les filières et niveaux uniques pour les dropdowns
+  const uniqueMajors = [...new Set(students.map(s => s.major).filter(Boolean))].sort();
+  const uniqueLevels = [...new Set(students.map(s => s.level).filter(Boolean))].sort();
+
+  // Filtrer les étudiants selon la recherche et les filtres filière/niveau
   const filteredStudents = students.filter(student => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       student.first_name.toLowerCase().includes(query) ||
       student.last_name.toLowerCase().includes(query) ||
       student.email.toLowerCase().includes(query) ||
       (student.student_number && student.student_number.toLowerCase().includes(query))
     );
+    const matchesMajor = selectedMajor === '' || student.major === selectedMajor;
+    const matchesLevel = selectedLevel === '' || student.level === selectedLevel;
+    
+    return matchesSearch && matchesMajor && matchesLevel;
   });
 
   const studentAvg = studentGrades.length > 0
@@ -212,7 +222,7 @@ const GestionEtudiants = () => {
     <div className="max-w-full">
       <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold">Gestion des Étudiants</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="search-container">
             <input 
               className="search-input" 
@@ -222,6 +232,29 @@ const GestionEtudiants = () => {
             />
             <Search className="search-icon w-4 h-4" />
           </div>
+
+          <select 
+            className="filter-select"
+            value={selectedMajor}
+            onChange={(e) => setSelectedMajor(e.target.value)}
+          >
+            <option value="">Toutes les filières</option>
+            {uniqueMajors.map((major, idx) => (
+              <option key={idx} value={major}>{major}</option>
+            ))}
+          </select>
+
+          <select 
+            className="filter-select"
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
+            <option value="">Tous les niveaux</option>
+            {uniqueLevels.map((level, idx) => (
+              <option key={idx} value={level}>{level}</option>
+            ))}
+          </select>
+
           <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
             <Plus className="w-5 h-5" />
             Ajouter un étudiant
@@ -640,7 +673,7 @@ const GestionEtudiants = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text-muted)]">
-            Total : {filteredStudents.length} étudiant{filteredStudents.length > 1 ? 's' : ''} {searchQuery && `(${students.length} au total)`}
+            Total : {filteredStudents.length} étudiant{filteredStudents.length > 1 ? 's' : ''} {(searchQuery || selectedMajor || selectedLevel) ? `(${students.length} au total)` : ''}
           </div>
         </div>
       )}
