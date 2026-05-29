@@ -15,6 +15,7 @@ const GestionEnseignants = () => {
   const [teacherStudents, setTeacherStudents] = useState({});
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -138,21 +139,27 @@ const GestionEnseignants = () => {
     }
   };
 
+  // Extraire les départements uniques
+  const uniqueDepartments = [...new Set(teachers.map(t => t.department).filter(Boolean))].sort();
+
   const filteredTeachers = teachers.filter(teacher => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       teacher.first_name.toLowerCase().includes(query) ||
       teacher.last_name.toLowerCase().includes(query) ||
       teacher.email.toLowerCase().includes(query) ||
       (teacher.department && teacher.department.toLowerCase().includes(query))
     );
+    const matchesDepartment = selectedDepartment === '' || teacher.department === selectedDepartment;
+    
+    return matchesSearch && matchesDepartment;
   });
 
   return (
     <div className="max-w-full">
       <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold">Gestion des Enseignants</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="search-container">
             <input 
               className="search-input" 
@@ -162,6 +169,18 @@ const GestionEnseignants = () => {
             />
             <Search className="search-icon w-4 h-4" />
           </div>
+
+          <select 
+            className="filter-select"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+          >
+            <option value="">Tous les départements</option>
+            {uniqueDepartments.map((dept, idx) => (
+              <option key={idx} value={dept}>{dept}</option>
+            ))}
+          </select>
+
           <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20">
             <Plus className="w-5 h-5" />
             Ajouter un enseignant
@@ -513,7 +532,7 @@ const GestionEnseignants = () => {
             </table>
           </div>
           <div className="px-6 py-4 bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text-muted)]">
-            Total : {filteredTeachers.length} enseignant{filteredTeachers.length > 1 ? 's' : ''} {searchQuery && `(${teachers.length} au total)`}
+            Total : {filteredTeachers.length} enseignant{filteredTeachers.length > 1 ? 's' : ''} {(searchQuery || selectedDepartment) ? `(${teachers.length} au total)` : ''}
           </div>
         </div>
       )}
