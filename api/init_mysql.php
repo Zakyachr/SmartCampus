@@ -2,7 +2,7 @@
 // Configuration MySQL/MariaDB (MAMP)
 $dbHost = 'localhost';
 $dbPort = 3306;
-$dbName = 'smartcampus';
+$dbName = 'smartcampus_db';
 $dbUser = 'root';
 $dbPass = 'root';
 
