@@ -1,14 +1,14 @@
 <?php
-// Inclure la configuration de la base de données et le middleware d'authentification
+//Inclure la configuration de la base de données et le middleware d'authentification
 require_once 'config/db.php';
 require_once 'middleware/auth_check.php';
 
-// Vérifier que l'utilisateur a un rôle autorisé
+//Vérifier que l'utilisateur a un rôle autorisé
 requireRole(['admin', 'teacher', 'student']);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// GET : Récupérer la liste de tous les cours
+//GET: Récupérer la liste de tous les cours
 if ($method === 'GET') {
     $stmt = $pdo->query("
         SELECT c.*, u.first_name AS teacher_first_name, u.last_name AS teacher_last_name 
@@ -17,13 +17,13 @@ if ($method === 'GET') {
     ");
     jsonResponse($stmt->fetchAll());
 } 
-// POST : Créer un nouveau cours (admin uniquement)
+//POST: Créer un nouveau cours (admin uniquement)
 elseif ($method === 'POST') {
     requireRole(['admin']);
     
     $data = json_decode(file_get_contents("php://input"), true);
     
-    // Valider et nettoyer les données
+    //Valider et nettoyer les données
     $code = filter_var($data['code'] ?? '', FILTER_SANITIZE_STRING);
     $title = filter_var($data['title'] ?? '', FILTER_SANITIZE_STRING);
     $teacher_id = !empty($data['teacher_id']) ? filter_var($data['teacher_id'], FILTER_VALIDATE_INT) : null;
@@ -36,7 +36,7 @@ elseif ($method === 'POST') {
     }
 
     try {
-        // Insérer le nouveau cours dans la base de données
+        //Insérer le nouveau cours dans la base de données
         $stmt = $pdo->prepare("INSERT INTO courses (code, title, teacher_id, max_capacity) VALUES (?, ?, ?, ?)");
         $stmt->execute([$code, $title, $teacher_id, $max_capacity]);
         jsonResponse(["message" => "Cours créé avec succès.", "id" => $pdo->lastInsertId()], 201);
@@ -50,7 +50,7 @@ elseif ($method === 'POST') {
         }
     }
 }
-// DELETE : Supprimer un cours (admin uniquement)
+//DELETE: Supprimer un cours (admin uniquement)
 elseif ($method === 'DELETE') {
     requireRole(['admin']);
     
@@ -63,11 +63,11 @@ elseif ($method === 'DELETE') {
     }
 
     try {
-        // Supprimer le cours de la base de données
+        //Supprimer le cours de la base de données
         $stmt = $pdo->prepare("DELETE FROM courses WHERE id = ?");
         $stmt->execute([$id]);
 
-        // Vérifier si le cours existait
+        //Vérifier si le cours existait
         if ($stmt->rowCount() === 0) {
             http_response_code(404);
             echo json_encode(["error" => "Cours introuvable."]);
@@ -80,14 +80,14 @@ elseif ($method === 'DELETE') {
         echo json_encode(["error" => "Erreur lors de la suppression du cours."]);
     }
 }
-// PUT : Modifier un cours existant (admin uniquement)
+//PUT : Modifier un cours existant (admin uniquement)
 elseif ($method === 'PUT') {
     requireRole(['admin']);
     
     $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
     $data = json_decode(file_get_contents("php://input"), true);
     
-    // Valider et nettoyer les données
+    //Valider et nettoyer les données
     $code = filter_var($data['code'] ?? '', FILTER_SANITIZE_STRING);
     $title = filter_var($data['title'] ?? '', FILTER_SANITIZE_STRING);
     $teacher_id = !empty($data['teacher_id']) ? filter_var($data['teacher_id'], FILTER_VALIDATE_INT) : null;
@@ -100,7 +100,7 @@ elseif ($method === 'PUT') {
     }
 
     try {
-        // Mettre à jour le cours dans la base de données
+        //Mettre à jour le cours dans la base de données
         $stmt = $pdo->prepare("UPDATE courses SET code = ?, title = ?, teacher_id = ?, max_capacity = ? WHERE id = ?");
         $stmt->execute([$code, $title, $teacher_id, $max_capacity, $id]);
         
@@ -115,21 +115,21 @@ elseif ($method === 'PUT') {
         }
     }
 }
-// PATCH : Valider un cours et verrouiller les notes (admin/professeur)
+//PATCH: Valider un cours et verrouiller les notes (admin/professeur)
 elseif ($method === 'PATCH') {
     requireRole(['admin', 'teacher']);
     
     $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
     $data = json_decode(file_get_contents("php://input"), true);
     
-    // Vérifier les paramètres requis
+    
     if (!$id || !isset($data['action']) || $data['action'] !== 'validate') {
         http_response_code(400);
         echo json_encode(["error" => "Requête invalide."]);
         exit();
     }
 
-    // Vérifier que le professeur valide uniquement ses propres cours
+    //Vérifier que le professeur valide uniquement ses propres cours
     if ($_SESSION['role'] === 'teacher') {
         $stmtCheck = $pdo->prepare("SELECT teacher_id FROM courses WHERE id = ?");
         $stmtCheck->execute([$id]);
@@ -141,7 +141,7 @@ elseif ($method === 'PATCH') {
     }
 
     try {
-        // Marquer le cours comme validé
+        //Marquer le cours comme validé
         $stmt = $pdo->prepare("UPDATE courses SET status = 'validé' WHERE id = ?");
         $stmt->execute([$id]);
         jsonResponse(["message" => "Le cours a été validé. Les notes sont verrouillées."]);
