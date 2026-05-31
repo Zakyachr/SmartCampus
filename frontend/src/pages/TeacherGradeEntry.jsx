@@ -13,10 +13,21 @@ const TeacherGradeEntry = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [weights, setWeights] = useState({ cc1_weight: 30, cc2_weight: 30, exam_weight: 40 });
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
+        // Charger les pondérations depuis les paramètres
+        const settings = JSON.parse(localStorage.getItem('smartcampus_settings') || '{}');
+        if (settings.academic) {
+          setWeights({
+            cc1_weight: settings.academic.cc1_weight || 30,
+            cc2_weight: settings.academic.cc2_weight || 30,
+            exam_weight: settings.academic.exam_weight || 40,
+          });
+        }
+
         const response = await apiClient.get('/courses.php');
         const teacherCourses = response.data.filter(
           (c) => c.teacher_id === user.id
@@ -84,6 +95,10 @@ const TeacherGradeEntry = () => {
         cc1: gradeData.cc1 ? parseFloat(gradeData.cc1) : null,
         cc2: gradeData.cc2 ? parseFloat(gradeData.cc2) : null,
         final_exam: gradeData.final_exam ? parseFloat(gradeData.final_exam) : null,
+        // Envoyer les pondérations pour un calcul dynamique
+        cc1_weight: weights.cc1_weight,
+        cc2_weight: weights.cc2_weight,
+        exam_weight: weights.exam_weight,
       };
 
       const response = await apiClient.put('/grades.php', payload);
@@ -117,6 +132,25 @@ const TeacherGradeEntry = () => {
     }
   };
 
+  const handleRevokeValidation = async () => {
+    if (!window.confirm("Êtes-vous sûr ? Cela permettra au professeur de modifier à nouveau les notes de ce cours.")) {
+      return;
+    }
+
+    try {
+      setSaving('unvalidate');
+      await apiClient.patch(`/courses.php?id=${selectedCourse}`, { action: 'unvalidate' });
+      setSuccess('L\'accès au cours a été rétabli. Le professeur peut maintenant modifier les notes.');
+      
+      // Mettre à jour l'état local du cours
+      setCourses(courses.map(c => c.id === selectedCourse ? { ...c, status: 'ouvert' } : c));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erreur lors du rétablissement de l\'accès');
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const calculateFinal = (enrollmentId) => {
     const g = grades[enrollmentId];
     if (!g || !g.cc1 || !g.cc2 || !g.final_exam) return '-';
@@ -125,7 +159,9 @@ const TeacherGradeEntry = () => {
     const cc2 = parseFloat(g.cc2);
     const exam = parseFloat(g.final_exam);
     
-    const final = (cc1 * 0.3) + (cc2 * 0.3) + (exam * 0.4);
+    // Utiliser les pondérations dynamiques
+    const totalWeight = weights.cc1_weight + weights.cc2_weight + weights.exam_weight;
+    const final = (cc1 * weights.cc1_weight + cc2 * weights.cc2_weight + exam * weights.exam_weight) / totalWeight;
     return final.toFixed(2);
   };
 
@@ -191,19 +227,31 @@ const TeacherGradeEntry = () => {
                 )}
               </h2>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                Pondération : CC1 (30%) + CC2 (30%) + Examen (40%)
+                Pondération : CC1 ({weights.cc1_weight}%) + CC2 ({weights.cc2_weight}%) + Examen ({weights.exam_weight}%)
               </p>
             </div>
-            {selectedCourseData?.status !== 'validé' && enrollments.length > 0 && (
-              <button
-                onClick={handleValidateCourse}
-                disabled={saving === 'validate'}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 transition-colors shadow-sm"
-              >
-                <CheckCircle className="w-4 h-4" />
-                {saving === 'validate' ? 'Validation...' : 'Valider définitivement'}
-              </button>
-            )}
+            <div className="flex gap-2">
+              {selectedCourseData?.status !== 'validé' && enrollments.length > 0 && (
+                <button
+                  onClick={handleValidateCourse}
+                  disabled={saving === 'validate'}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 transition-colors shadow-sm"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {saving === 'validate' ? 'Validation...' : 'Valider définitivement'}
+                </button>
+              )}
+              {selectedCourseData?.status === 'validé' && user?.role === 'admin' && (
+                <button
+                  onClick={handleRevokeValidation}
+                  disabled={saving === 'unvalidate'}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2 transition-colors shadow-sm"
+                >
+                  <Lock className="w-4 h-4" />
+                  {saving === 'unvalidate' ? 'Rétablissement...' : 'Rétablir l\'accès'}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">

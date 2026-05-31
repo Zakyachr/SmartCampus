@@ -115,39 +115,53 @@ elseif ($method === 'PUT') {
         }
     }
 }
-//PATCH: Valider un cours et verrouiller les notes (admin/professeur)
+//PATCH: Valider/Invalider un cours (admin/professeur)
 elseif ($method === 'PATCH') {
     requireRole(['admin', 'teacher']);
     
     $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
     $data = json_decode(file_get_contents("php://input"), true);
+    $action = $data['action'] ?? '';
     
-    
-    if (!$id || !isset($data['action']) || $data['action'] !== 'validate') {
+    if (!$id || !$action || !in_array($action, ['validate', 'unvalidate'])) {
         http_response_code(400);
         echo json_encode(["error" => "Requête invalide."]);
         exit();
     }
 
-    //Vérifier que le professeur valide uniquement ses propres cours
+    // Vérifier que le professeur valide/invalide uniquement ses propres cours
     if ($_SESSION['role'] === 'teacher') {
         $stmtCheck = $pdo->prepare("SELECT teacher_id FROM courses WHERE id = ?");
         $stmtCheck->execute([$id]);
         if ($stmtCheck->fetchColumn() !== $_SESSION['user_id']) {
             http_response_code(403);
-            echo json_encode(["error" => "Vous ne pouvez valider que vos propres cours."]);
+            echo json_encode(["error" => "Vous ne pouvez modifier que vos propres cours."]);
+            exit();
+        }
+        
+        // Les profs ne peuvent pas "unvalidate"
+        if ($action === 'unvalidate') {
+            http_response_code(403);
+            echo json_encode(["error" => "Seul un admin peut rétablir l'accès à la modification."]);
             exit();
         }
     }
 
     try {
-        //Marquer le cours comme validé
-        $stmt = $pdo->prepare("UPDATE courses SET status = 'validé' WHERE id = ?");
-        $stmt->execute([$id]);
-        jsonResponse(["message" => "Le cours a été validé. Les notes sont verrouillées."]);
+        if ($action === 'validate') {
+            // Marquer le cours comme validé
+            $stmt = $pdo->prepare("UPDATE courses SET status = 'validé' WHERE id = ?");
+            $stmt->execute([$id]);
+            jsonResponse(["message" => "Le cours a été validé. Les notes sont verrouillées."]);
+        } else if ($action === 'unvalidate') {
+            // Admin rétablit l'accès : marquer comme "ouvert"
+            $stmt = $pdo->prepare("UPDATE courses SET status = 'ouvert' WHERE id = ?");
+            $stmt->execute([$id]);
+            jsonResponse(["message" => "L'accès au cours a été rétabli. Le professeur peut modifier les notes."]);
+        }
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode(["error" => "Erreur lors de la validation du cours."]);
+        echo json_encode(["error" => "Erreur lors de la modification du cours."]);
     }
 }
 ?>

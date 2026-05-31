@@ -10,4 +10,22 @@ const apiClient = axios.create({
     }
 });
 
+// Intercepteur pour gérer les erreurs 401 (session expirée)
+apiClient.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 401) {
+            // Déterminer si c'est une expiration de session
+            const errorMsg = error.response?.data?.error || '';
+            if (errorMsg.includes('Session expirée') || errorMsg.includes('Non autorisé')) {
+                // Rediriger vers la page de login
+                window.location.href = '/login';
+                // Optionnel : afficher un message
+                localStorage.setItem('sessionExpired', 'true');
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default apiClient;

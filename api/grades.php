@@ -102,6 +102,11 @@ elseif ($method === 'PUT') {
     $cc2 = isset($data['cc2']) ? filter_var($data['cc2'], FILTER_VALIDATE_FLOAT) : null;
     $final_exam = isset($data['final_exam']) ? filter_var($data['final_exam'], FILTER_VALIDATE_FLOAT) : null;
     
+    // Récupérer les pondérations (avec valeurs par défaut)
+    $cc1_weight = isset($data['cc1_weight']) ? filter_var($data['cc1_weight'], FILTER_VALIDATE_FLOAT) : 30;
+    $cc2_weight = isset($data['cc2_weight']) ? filter_var($data['cc2_weight'], FILTER_VALIDATE_FLOAT) : 30;
+    $exam_weight = isset($data['exam_weight']) ? filter_var($data['exam_weight'], FILTER_VALIDATE_FLOAT) : 40;
+    
     if (!$enrollment_id) {
         http_response_code(400);
         echo json_encode(["error" => "ID d'inscription manquant."]);
@@ -125,10 +130,14 @@ elseif ($method === 'PUT') {
         }
     }
 
-    // Calcul de la moyenne (30% CC1, 30% CC2, 40% Examen)
+    // Calcul de la moyenne utilisant les pondérations envoyées par le frontend
     $final_grade = null;
     if ($cc1 !== null && $cc2 !== null && $final_exam !== null) {
-        $final_grade = ($cc1 * 0.3) + ($cc2 * 0.3) + ($final_exam * 0.4);
+        // Normaliser les poids à 100 pour le calcul
+        $total_weight = $cc1_weight + $cc2_weight + $exam_weight;
+        if ($total_weight > 0) {
+            $final_grade = ($cc1 * $cc1_weight + $cc2 * $cc2_weight + $final_exam * $exam_weight) / $total_weight;
+        }
     }
 
     // Vérifier que le cours n'est pas verrouillé ("validé")

@@ -31,11 +31,27 @@ const MonEmploiDuTemps = () => {
 
   const groupedByDay = {};
   days.forEach(day => {
-    groupedByDay[day] = schedules.filter(s => s.day_of_week === day);
+    const dayCourses = schedules.filter(s => s.day_of_week === day);
+    
+    // Dédupliquer les cours en se basant sur course_id + start_time + end_time
+    const seen = new Map();
+    for (const course of dayCourses) {
+      const key = `${course.course_id}-${course.start_time}-${course.end_time}`;
+      if (!seen.has(key)) {
+        seen.set(key, course);
+      }
+    }
+    groupedByDay[day] = Array.from(seen.values());
   });
 
   // Heures d'affichage typiques pour une école, par ex. 08:00 à 18:00
   const timeSlots = [...Array(11)].map((_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
+
+  // Fonction pour convertir l'heure en minutes
+  const timeToMinutes = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
 
   return (
     <div>
@@ -63,34 +79,56 @@ const MonEmploiDuTemps = () => {
                 {days.map(day => {
                   const daySchedules = groupedByDay[day] || [];
                   const slotHour = parseInt(time.split(':')[0], 10);
-                  const activeSchedule = daySchedules.find(s => {
-                    const sHour = parseInt(s.start_time.split(':')[0], 10);
-                    return sHour === slotHour;
+                  const slotMinutes = slotHour * 60;
+
+                  // Trouver les cours qui COMMENCENT exactement à cette heure
+                  const startingSchedules = daySchedules.filter(s => {
+                    const startMinutes = timeToMinutes(s.start_time);
+                    return startMinutes >= slotMinutes && startMinutes < slotMinutes + 60;
                   });
 
                   return (
-                    <td key={day + time} className="p-1 border-b h-28 align-top relative">
-                      {activeSchedule && (
-                        <div 
-                          className="absolute inset-1 p-2 rounded-lg flex flex-col justify-start text-xs overflow-y-auto shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                          style={{ 
-                            backgroundColor: dayColors[day] || '#f0f9ff',
-                            borderLeft: `4px solid var(--color-primary)`
-                          }}
-                        >
-                          <div className="font-semibold text-gray-800 leading-snug mb-1.5">
-                            {activeSchedule.course_title}
+                    <td key={day + time} className="p-1 border-b h-28 align-top relative bg-white overflow-visible">
+                      {startingSchedules.map((schedule, idx) => {
+                        const startMinutes = timeToMinutes(schedule.start_time);
+                        const endMinutes = timeToMinutes(schedule.end_time);
+                        const totalDuration = endMinutes - startMinutes;
+                        
+                        // Position offset pour les minutes (ex: 08:30 = 0.5 * 112px)
+                        const slotStartMinutes = slotHour * 60;
+                        const minuteOffset = (startMinutes - slotStartMinutes) % 60;
+                        const positionOffset = (minuteOffset / 60) * 112;
+                        
+                        // Hauteur totale du cours (en pixels)
+                        const totalHeight = (totalDuration / 60) * 112;
+
+                        return (
+                          <div
+                            key={idx}
+                            className="absolute inset-x-1 p-2 rounded-lg flex flex-col justify-start text-xs overflow-y-auto shadow-sm hover:shadow-md transition-shadow cursor-pointer z-10"
+                            style={{
+                              top: `${positionOffset + 4}px`,
+                              height: `${totalHeight}px`,
+                              backgroundColor: dayColors[day] || '#f0f9ff',
+                              borderLeft: '4px solid var(--color-primary)',
+                              width: 'calc(100% - 8px)',
+                              minHeight: '40px'
+                            }}
+                          >
+                            <div className="font-semibold text-gray-800 leading-snug mb-1">
+                              {schedule.course_title}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-600 text-xs">
+                              <Clock className="w-3 h-3 flex-shrink-0" />
+                              <span className="whitespace-nowrap">{schedule.start_time.substring(0,5)} - {schedule.end_time.substring(0,5)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-600 text-xs">
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{schedule.room}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-gray-600 mb-1">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span className="whitespace-nowrap">{activeSchedule.start_time.substring(0,5)} - {activeSchedule.end_time.substring(0,5)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate leading-tight">{activeSchedule.room}</span>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </td>
                   );
                 })}

@@ -16,11 +16,19 @@ const StudentEnrollment = () => {
   const [error, setError] = useState(null); // Message d'erreur
   const [success, setSuccess] = useState(null); // Message de succès
   const [enrolling, setEnrolling] = useState(null); // ID du cours en cours d'inscription/désinscription
+  const [enrollmentEnabled, setEnrollmentEnabled] = useState(true); // Vérification si l'inscription est activée
 
   // Effet : charge les données au montage du composant
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Vérifier si l'inscription est activée
+        const settings = JSON.parse(localStorage.getItem('smartcampus_settings') || '{}');
+        if (settings.system && settings.system.allow_student_enrollment === false) {
+          setEnrollmentEnabled(false);
+          setError('Les inscriptions aux cours sont actuellement désactivées par l\'administrateur.');
+        }
+
         // Récupérer tous les cours
         const coursesResponse = await apiClient.get('/courses.php');
         setAvailableCourses(coursesResponse.data || []);
@@ -32,7 +40,7 @@ const StudentEnrollment = () => {
         }
       } catch (err) {
         console.error('Erreur:', err);
-        setError('Erreur lors du chargement des données');
+        if (!error) setError('Erreur lors du chargement des données');
       } finally {
         setLoading(false);
       }
@@ -42,6 +50,12 @@ const StudentEnrollment = () => {
 
   // Fonction : inscrire l'étudiant à un cours
   const handleEnroll = async (courseId) => {
+    // Vérifier si l'inscription est activée
+    if (!enrollmentEnabled) {
+      setError('Les inscriptions sont actuellement désactivées. Veuillez contacter l\'administration.');
+      return;
+    }
+
     setEnrolling(courseId); // Marquer le cours comme en cours d'inscription
     setError(null);
     setSuccess(null);
@@ -176,7 +190,7 @@ const StudentEnrollment = () => {
                     // Bouton d'inscription (bleu) si l'étudiant n'est pas encore inscrit
                     <button
                       onClick={() => handleEnroll(course.id)}
-                      disabled={enrolling === course.id}
+                      disabled={enrolling === course.id || !enrollmentEnabled}
                       className="flex-1 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
                     >
                       {enrolling === course.id ? 'Inscription...' : 'S\'inscrire'}

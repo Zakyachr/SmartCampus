@@ -1,5 +1,6 @@
 <?php
 require_once 'config/db.php';
+require_once 'middleware/auth_check.php';
 
 // Seulement accessible en développement ou avec une clé secrète
 $allowedIPs = ['127.0.0.1', 'localhost', '::1'];

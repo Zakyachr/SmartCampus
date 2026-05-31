@@ -5,7 +5,7 @@ if (strpos($_SERVER['HTTP_ORIGIN'] ?? '', 'localhost') !== false) {
     header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
 } 
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 // Gestion du "preflight request" d'Axios (nécessaire pour les requêtes complexes en React)

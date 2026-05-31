@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar, Search, Filter } from 'lucide-react';
+import { Mail, Plus, Eye, Users, X, Trash2, Edit, Calendar, Search, Filter, Unlock } from 'lucide-react';
 import apiClient from '../api/apiClient';
 
 // Composant de gestion complète des cours : CRUD, horaires, visualisation des inscriptions
@@ -159,6 +159,24 @@ const GestionCours = () => {
       alert("Erreur lors de la suppression : " + (err.response?.data?.error || err.message));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Rétablit l'accès à un cours validé (permet au prof de remodifier les notes)
+  const handleRevokeValidation = async (course) => {
+    if (!window.confirm(`Êtes-vous sûr ? Cela permettra au professeur de modifier à nouveau les notes du cours "${course.title}".`)) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await apiClient.patch(`/courses.php?id=${course.id}`, { action: 'unvalidate' });
+      alert('L\'accès au cours a été rétabli. Le professeur peut maintenant modifier les notes.');
+      fetchCourses();
+    } catch (err) {
+      alert("Erreur lors du rétablissement de l'accès : " + (err.response?.data?.error || err.message));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -764,6 +782,16 @@ const GestionCours = () => {
                           >
                             <Calendar className="w-4 h-4" />
                           </button>
+                          {course.status === 'validé' && (
+                            <button 
+                              onClick={() => handleRevokeValidation(course)}
+                              disabled={submitting}
+                              className="p-2 hover:bg-orange-50 rounded text-orange-600 transition-colors disabled:opacity-50" 
+                              title="Rétablir l'accès - Permettre au professeur de modifier les notes"
+                            >
+                              <Unlock className="w-4 h-4" />
+                            </button>
+                          )}
                           <button 
                             onClick={() => openEditModal(course)}
                             className="p-2 hover:bg-orange-50 rounded text-orange-600 transition-colors" 

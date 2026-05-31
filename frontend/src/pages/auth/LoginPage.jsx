@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -16,6 +16,14 @@ const LoginPage = () => {
 
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    // Vérifier si la session a expiré
+    useEffect(() => {
+        if (localStorage.getItem('sessionExpired')) {
+            setError('Votre session a expiré. Veuillez vous reconnecter.');
+            localStorage.removeItem('sessionExpired');
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
